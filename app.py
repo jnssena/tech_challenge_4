@@ -1,250 +1,826 @@
-"""
-app.py — Aplicação Streamlit para Predição de Obesidade
-========================================================
-Como rodar localmente:
-    streamlit run app.py
-"""
-
 import streamlit as st
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import seaborn as sns
 import joblib
+import os
 
-# ── Configuração da página ────────────────────────────────────────────────────
+from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import (
+    accuracy_score, f1_score, classification_report,
+    confusion_matrix
+)
+
+import warnings
+warnings.filterwarnings("ignore")
+
+# ══════════════════════════════════════════════════════
+# CONFIGURAÇÃO DA PÁGINA
+# ══════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Predição de Obesidade",
-    page_icon="🩺",
-    layout="centered",
+    page_title="ObesityAI — Sistema de Diagnóstico",
+    page_icon="🏥",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ── Carregar o modelo salvo ───────────────────────────────────────────────────
-@st.cache_resource          # Carrega o modelo apenas uma vez (fica na memória)
-def carregar_modelo():
-    return joblib.load("modelo_obesidade.pkl")
+# ══════════════════════════════════════════════════════
+# CSS CUSTOMIZADO — visual médico clean e profissional
+# ══════════════════════════════════════════════════════
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
 
-pacote = carregar_modelo()
-modelo   = pacote["modelo"]
-encoders = pacote["encoders"]
-features = pacote["features"]
+html, body, [class*="css"] {
+    font-family: 'DM Sans', sans-serif;
+}
 
-# Encoder do target (para transformar número de volta em nome)
-le_target = encoders["Obesity"]
+/* Fundo geral */
+.stApp {
+    background: #f0f4f8;
+}
 
-# ── Cabeçalho ─────────────────────────────────────────────────────────────────
-st.title("🩺 Sistema Preditivo de Obesidade")
-st.markdown(
-    """
-    Preencha as informações do paciente nos campos abaixo e clique em
-    **Prever** para obter o diagnóstico de nível de obesidade.
-    """
-)
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background: #0f2342 !important;
+    border-right: 1px solid #1e3a5f;
+}
+[data-testid="stSidebar"] * {
+    color: #e8f0fe !important;
+}
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] .stSlider label,
+[data-testid="stSidebar"] .stNumberInput label {
+    color: #93b4d4 !important;
+    font-size: 0.78rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+[data-testid="stSidebar"] h1, 
+[data-testid="stSidebar"] h2, 
+[data-testid="stSidebar"] h3 {
+    color: #ffffff !important;
+    font-family: 'DM Serif Display', serif !important;
+}
 
-st.divider()
+/* Cards */
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+.card-blue {
+    background: linear-gradient(135deg, #0f2342 0%, #1a3d6b 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+}
+.card-blue h2, .card-blue p, .card-blue span {
+    color: white !important;
+}
 
-# ── Formulário de entrada ─────────────────────────────────────────────────────
-st.subheader("📋 Dados do Paciente")
+/* Resultado */
+.result-box {
+    border-radius: 16px;
+    padding: 28px;
+    text-align: center;
+    margin: 12px 0;
+}
+.result-normal    { background: #e8f5e9; border: 2px solid #4caf50; }
+.result-overweight{ background: #fff8e1; border: 2px solid #ffb300; }
+.result-obese     { background: #fce4ec; border: 2px solid #e91e63; }
+.result-insuf     { background: #e3f2fd; border: 2px solid #1e88e5; }
 
-col1, col2 = st.columns(2)
+/* Métricas */
+.metric-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.metric-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.4rem;
+    color: #0f2342;
+    line-height: 1;
+}
+.metric-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 6px;
+}
 
-with col1:
-    gender = st.selectbox(
-        "Sexo",
-        options=["Female", "Male"],
-        help="Sexo biológico do paciente"
+/* Título hero */
+.hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.2rem;
+    color: white;
+    margin: 0;
+    line-height: 1.2;
+}
+.hero-sub {
+    font-size: 0.9rem;
+    color: #93b4d4;
+    margin-top: 6px;
+}
+
+/* Tab styling */
+.stTabs [data-baseweb="tab"] {
+    font-weight: 500;
+    color: #64748b;
+    border-radius: 8px 8px 0 0;
+}
+.stTabs [aria-selected="true"] {
+    color: #0f2342 !important;
+    border-bottom: 2px solid #0f2342 !important;
+}
+
+/* Botão principal */
+.stButton > button {
+    background: linear-gradient(135deg, #0f2342, #1e5fa8) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 14px 28px !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    width: 100%;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+}
+.stButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(15,35,66,0.35) !important;
+}
+
+/* Divisor */
+.divider { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+
+/* Insight badge */
+.badge {
+    display: inline-block;
+    background: #e8f0fe;
+    color: #1a56db;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 6px;
+}
+
+/* Oculta elementos padrão do streamlit */
+#MainMenu, footer, header { visibility: hidden; }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════════════
+# FUNÇÕES DE CACHE — treina o modelo só uma vez
+# ══════════════════════════════════════════════════════
+
+@st.cache_data(show_spinner=False)
+def carregar_dados():
+    URL = (
+        "https://raw.githubusercontent.com/jnssena/tech_challenge_4"
+        "/main/Referencias_Atividade/Obesity.csv"
+    )
+    df = pd.read_csv(URL)
+    return df
+
+@st.cache_resource(show_spinner=False)
+def treinar_modelo(df_hash):
+    df = carregar_dados()
+    df_modelo = df.copy()
+    COLUNA_ALVO = "Obesity"
+
+    colunas_cat = df_modelo.select_dtypes(include="object").columns.tolist()
+    colunas_features_cat = [c for c in colunas_cat if c != COLUNA_ALVO]
+
+    encoders = {}
+    for col in colunas_features_cat:
+        le = LabelEncoder()
+        df_modelo[col] = le.fit_transform(df_modelo[col].astype(str))
+        encoders[col] = le
+
+    le_target = LabelEncoder()
+    df_modelo[COLUNA_ALVO] = le_target.fit_transform(df_modelo[COLUNA_ALVO].astype(str))
+
+    X = df_modelo.drop(columns=[COLUNA_ALVO])
+    y = df_modelo[COLUNA_ALVO]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    age = st.number_input(
-        "Idade (anos)",
-        min_value=1, max_value=120, value=25, step=1
-    )
-
-    height = st.number_input(
-        "Altura (metros)",
-        min_value=0.50, max_value=2.50, value=1.70, step=0.01, format="%.2f"
-    )
-
-    weight = st.number_input(
-        "Peso (kg)",
-        min_value=10.0, max_value=300.0, value=70.0, step=0.5, format="%.1f"
-    )
-
-    family_history = st.selectbox(
-        "Histórico familiar de sobrepeso?",
-        options=["yes", "no"],
-        help="Algum familiar tem ou teve sobrepeso?"
-    )
-
-    favc = st.selectbox(
-        "Consome alimentos calóricos com frequência?",
-        options=["yes", "no"],
-        help="FAVC — Frequent Consumption of High Caloric Food"
-    )
-
-    fcvc = st.slider(
-        "Frequência de consumo de vegetais (0–3)",
-        min_value=1.0, max_value=3.0, value=2.0, step=0.5,
-        help="FCVC: 1 = raramente, 3 = sempre"
-    )
-
-    ncp = st.slider(
-        "Número de refeições principais por dia",
-        min_value=1.0, max_value=4.0, value=3.0, step=0.5,
-        help="NCP: Number of Main Meals"
-    )
-
-with col2:
-    caec = st.selectbox(
-        "Come entre as refeições?",
-        options=["no", "Sometimes", "Frequently", "Always"],
-        help="CAEC — Consumption of Food Between Meals"
-    )
-
-    smoke = st.selectbox(
-        "Fumante?",
-        options=["no", "yes"]
-    )
-
-    ch2o = st.slider(
-        "Consumo diário de água (litros, 1–3)",
-        min_value=1.0, max_value=3.0, value=2.0, step=0.5,
-        help="CH2O: Daily Water Consumption"
-    )
-
-    scc = st.selectbox(
-        "Monitora as calorias ingeridas?",
-        options=["no", "yes"],
-        help="SCC — Caloric Intake Monitoring"
-    )
-
-    faf = st.slider(
-        "Frequência de atividade física por semana (0–3)",
-        min_value=0.0, max_value=3.0, value=1.0, step=0.5,
-        help="FAF: Physical Activity Frequency"
-    )
-
-    tue = st.slider(
-        "Horas diárias usando dispositivos tecnológicos (0–2)",
-        min_value=0.0, max_value=2.0, value=1.0, step=0.5,
-        help="TUE: Time Using Technology Devices"
-    )
-
-    calc = st.selectbox(
-        "Frequência de consumo de álcool",
-        options=["no", "Sometimes", "Frequently", "Always"],
-        help="CALC — Consumption of Alcohol"
-    )
-
-    mtrans = st.selectbox(
-        "Principal meio de transporte",
-        options=["Public_Transportation", "Walking", "Automobile", "Motorbike", "Bike"],
-        help="MTRANS — Transportation Used"
-    )
-
-st.divider()
-
-# ── Botão de predição ─────────────────────────────────────────────────────────
-if st.button("🔍 Prever Nível de Obesidade", use_container_width=True, type="primary"):
-
-    # Monta o dicionário com os valores inseridos
-    dados_brutos = {
-        "Gender":                          gender,
-        "Age":                             age,
-        "Height":                          height,
-        "Weight":                          weight,
-        "family_history_with_overweight":  family_history,
-        "FAVC":                            favc,
-        "FCVC":                            fcvc,
-        "NCP":                             ncp,
-        "CAEC":                            caec,
-        "SMOKE":                           smoke,
-        "CH2O":                            ch2o,
-        "SCC":                             scc,
-        "FAF":                             faf,
-        "TUE":                             tue,
-        "CALC":                            calc,
-        "MTRANS":                          mtrans,
+    modelos = {
+        "Regressão Logística": Pipeline([("scaler", StandardScaler()),
+            ("modelo", LogisticRegression(max_iter=1000, random_state=42))]),
+        "Árvore de Decisão": Pipeline([("scaler", StandardScaler()),
+            ("modelo", DecisionTreeClassifier(random_state=42))]),
+        "Random Forest": Pipeline([("scaler", StandardScaler()),
+            ("modelo", RandomForestClassifier(n_estimators=100, random_state=42))]),
+        "Gradient Boosting": Pipeline([("scaler", StandardScaler()),
+            ("modelo", GradientBoostingClassifier(n_estimators=100, random_state=42))]),
+        "KNN": Pipeline([("scaler", StandardScaler()),
+            ("modelo", KNeighborsClassifier(n_neighbors=5))]),
     }
 
-    # Cria DataFrame com uma linha
-    df_entrada = pd.DataFrame([dados_brutos])
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    resultados = {}
+    for nome, pipe in modelos.items():
+        scores = cross_val_score(pipe, X_train, y_train, cv=cv, scoring="accuracy")
+        resultados[nome] = scores.mean()
 
-    # Aplica o LabelEncoder nas colunas categóricas (mesmo encoding do treino)
-    for col in df_entrada.columns:
-        if col in encoders and col != "Obesity":
-            le = encoders[col]
-            valor = df_entrada[col].astype(str)
-            # Se aparecer valor desconhecido, usa o primeiro valor conhecido
-            df_entrada[col] = valor.apply(
-                lambda v: le.transform([v])[0]
-                if v in le.classes_
-                else le.transform([le.classes_[0]])[0]
-            )
+    nome_melhor = max(resultados, key=resultados.get)
+    modelo_final = modelos[nome_melhor]
+    modelo_final.fit(X_train, y_train)
 
-    # Garante a ordem correta das colunas
-    df_entrada = df_entrada[features]
+    y_pred = modelo_final.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    f1  = f1_score(y_test, y_pred, average="weighted")
+    cm  = confusion_matrix(y_test, y_pred)
+    report = classification_report(y_test, y_pred,
+                                   target_names=le_target.classes_,
+                                   output_dict=True)
 
-    # Faz a predição
-    predicao_num = modelo.predict(df_entrada)[0]
-    predicao_proba = modelo.predict_proba(df_entrada)[0]
-    predicao_nome = le_target.inverse_transform([predicao_num])[0]
+    # Importância das features (Random Forest / GB)
+    estimador = modelo_final.named_steps["modelo"]
+    if hasattr(estimador, "feature_importances_"):
+        feat_imp = pd.DataFrame({
+            "Feature": X.columns,
+            "Importância": estimador.feature_importances_
+        }).sort_values("Importância", ascending=False)
+    else:
+        coefs = np.abs(estimador.coef_).mean(axis=0)
+        feat_imp = pd.DataFrame({
+            "Feature": X.columns,
+            "Importância": coefs
+        }).sort_values("Importância", ascending=False)
 
-    # ── Exibição do resultado ──────────────────────────────────────────────────
-    st.subheader("📊 Resultado da Predição")
-
-    # Mapeamento de cores e ícones por nível de obesidade
-    mapa_resultado = {
-        "Insufficient_Weight":       ("🔵", "Abaixo do Peso",           "#1E90FF"),
-        "Normal_Weight":             ("🟢", "Peso Normal",               "#28A745"),
-        "Overweight_Level_I":        ("🟡", "Sobrepeso Grau I",          "#FFC107"),
-        "Overweight_Level_II":       ("🟠", "Sobrepeso Grau II",         "#FF8C00"),
-        "Obesity_Type_I":            ("🔴", "Obesidade Tipo I",          "#DC3545"),
-        "Obesity_Type_II":           ("🟣", "Obesidade Tipo II",         "#9B59B6"),
-        "Obesity_Type_III":          ("⚫", "Obesidade Tipo III (Grave)", "#343A40"),
+    return {
+        "modelo": modelo_final,
+        "encoders": encoders,
+        "le_target": le_target,
+        "colunas_features_cat": colunas_features_cat,
+        "X_columns": list(X.columns),
+        "acc": acc,
+        "f1": f1,
+        "cm": cm,
+        "report": report,
+        "resultados_cv": resultados,
+        "nome_melhor": nome_melhor,
+        "feat_imp": feat_imp,
+        "X_test": X_test,
+        "y_test": y_test,
+        "y_pred": y_pred,
     }
 
-    icone, descricao, cor = mapa_resultado.get(
-        predicao_nome, ("⚪", predicao_nome, "#6C757D")
-    )
 
-    st.markdown(
-        f"""
-        <div style="
-            background-color: {cor}22;
-            border-left: 6px solid {cor};
-            padding: 20px 24px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-        ">
-            <h2 style="color:{cor}; margin:0;">{icone} {descricao}</h2>
-            <p style="color:#555; margin:4px 0 0 0; font-size:13px;">
-                Classificação bruta: <code>{predicao_nome}</code>
-            </p>
+# ══════════════════════════════════════════════════════
+# CARREGAR DADOS E MODELO
+# ══════════════════════════════════════════════════════
+with st.spinner("🔄 Carregando dados e treinando o modelo..."):
+    df = carregar_dados()
+    art = treinar_modelo(hash(df.shape[0]))
+
+modelo        = art["modelo"]
+encoders      = art["encoders"]
+le_target     = art["le_target"]
+feat_cat      = art["colunas_features_cat"]
+X_cols        = art["X_columns"]
+nome_melhor   = art["nome_melhor"]
+
+
+# ══════════════════════════════════════════════════════
+# SIDEBAR — formulário de entrada do paciente
+# ══════════════════════════════════════════════════════
+with st.sidebar:
+    st.markdown("""
+    <div style='padding: 10px 0 20px 0'>
+        <p style='font-size:0.7rem; color:#4a7fa5; letter-spacing:0.15em; margin:0'>SISTEMA PREDITIVO</p>
+        <h1 style='font-family:DM Serif Display,serif; font-size:1.6rem; margin:4px 0 0 0'>ObesityAI</h1>
+        <p style='font-size:0.8rem; color:#4a7fa5; margin:4px 0 0 0'>Apoio ao diagnóstico médico</p>
+    </div>
+    <hr style='border-color:#1e3a5f; margin-bottom:20px'>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### 👤 Dados do Paciente")
+
+    with st.expander("📋 Dados Físicos", expanded=True):
+        genero = st.selectbox("Gênero", ["Male", "Female"])
+        idade  = st.slider("Idade", 10, 80, 30)
+        altura = st.slider("Altura (m)", 1.40, 2.10, 1.70, 0.01)
+        peso   = st.slider("Peso (kg)", 30.0, 180.0, 75.0, 0.5)
+
+    with st.expander("🍽️ Hábitos Alimentares", expanded=True):
+        hist_fam = st.selectbox("Histórico familiar de sobrepeso", ["yes", "no"])
+        favc     = st.selectbox("Consome alimentos calóricos frequentemente?", ["yes", "no"])
+        fcvc     = st.slider("Freq. consumo de vegetais (1=baixo, 3=alto)", 1.0, 3.0, 2.0, 0.5)
+        ncp      = st.slider("Nº de refeições principais por dia", 1.0, 4.0, 3.0, 0.5)
+        caec     = st.selectbox("Come entre as refeições?", ["no", "Sometimes", "Frequently", "Always"])
+        ch2o     = st.slider("Litros de água por dia (1–3)", 1.0, 3.0, 2.0, 0.5)
+        scc      = st.selectbox("Monitora calorias consumidas?", ["no", "yes"])
+
+    with st.expander("🏃 Estilo de Vida", expanded=True):
+        smoke = st.selectbox("Fuma?", ["no", "yes"])
+        faf   = st.slider("Freq. atividade física (0=nunca, 3=sempre)", 0.0, 3.0, 1.0, 0.5)
+        tue   = st.slider("Horas/dia em telas (0–2)", 0.0, 2.0, 1.0, 0.5)
+        calc  = st.selectbox("Freq. consumo de álcool", ["no", "Sometimes", "Frequently", "Always"])
+        mtrans= st.selectbox("Principal meio de transporte", [
+            "Public_Transportation", "Walking", "Automobile", "Motorbike", "Bike"])
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    predict_btn = st.button("🔬 Analisar Paciente")
+
+
+# ══════════════════════════════════════════════════════
+# HELPER — predição
+# ══════════════════════════════════════════════════════
+def fazer_predicao():
+    dados = {
+        "Gender": genero, "Age": float(idade), "Height": altura,
+        "Weight": peso, "family_history": hist_fam, "FAVC": favc,
+        "FCVC": fcvc, "NCP": ncp, "CAEC": caec, "SMOKE": smoke,
+        "CH2O": ch2o, "SCC": scc, "FAF": faf, "TUE": tue,
+        "CALC": calc, "MTRANS": mtrans,
+    }
+    pac = pd.DataFrame([dados])
+    for col in feat_cat:
+        le = encoders[col]
+        val = pac[col].astype(str)
+        val_safe = val.map(lambda v: v if v in le.classes_ else le.classes_[0])
+        pac[col] = le.transform(val_safe)
+    pac = pac[X_cols]
+    pred_num  = modelo.predict(pac)[0]
+    pred_nome = le_target.inverse_transform([pred_num])[0]
+    probs     = modelo.predict_proba(pac)[0]
+    return pred_nome, probs, le_target.classes_
+
+def classe_css(nome):
+    n = nome.lower()
+    if "insufficient" in n: return "result-insuf"
+    if "normal"       in n: return "result-normal"
+    if "overweight"   in n: return "result-overweight"
+    return "result-obese"
+
+def emoji_classe(nome):
+    n = nome.lower()
+    if "insufficient" in n: return "🔵"
+    if "normal"       in n: return "🟢"
+    if "overweight"   in n: return "🟡"
+    return "🔴"
+
+CLASSE_PT = {
+    "Insufficient_Weight": "Abaixo do Peso",
+    "Normal_Weight":       "Peso Normal",
+    "Overweight_Level_I":  "Sobrepeso Grau I",
+    "Overweight_Level_II": "Sobrepeso Grau II",
+    "Obesity_Type_I":      "Obesidade Tipo I",
+    "Obesity_Type_II":     "Obesidade Tipo II",
+    "Obesity_Type_III":    "Obesidade Tipo III",
+}
+
+IMC = round(peso / (altura ** 2), 1)
+
+
+# ══════════════════════════════════════════════════════
+# HEADER HERO
+# ══════════════════════════════════════════════════════
+st.markdown(f"""
+<div class="card-blue" style="padding:32px 36px; margin-bottom:24px">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px">
+        <div>
+            <p style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.15em; margin:0">HOSPITAL • SISTEMA DE APOIO DIAGNÓSTICO</p>
+            <h1 class="hero-title">ObesityAI</h1>
+            <p class="hero-sub">Predição de obesidade por Machine Learning — Modelo: <strong style="color:white">{nome_melhor}</strong></p>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        <div style="display:flex; gap:24px; flex-wrap:wrap">
+            <div style="text-align:center">
+                <div style="font-family:'DM Serif Display',serif; font-size:2rem; color:white">{art['acc']*100:.1f}%</div>
+                <div style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.1em">ACURÁCIA</div>
+            </div>
+            <div style="text-align:center">
+                <div style="font-family:'DM Serif Display',serif; font-size:2rem; color:white">{art['f1']*100:.1f}%</div>
+                <div style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.1em">F1-SCORE</div>
+            </div>
+            <div style="text-align:center">
+                <div style="font-family:'DM Serif Display',serif; font-size:2rem; color:white">2.1k</div>
+                <div style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.1em">PACIENTES</div>
+            </div>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-    # Probabilidades por classe
-    st.markdown("**Probabilidade por classe:**")
-    classes_nomes = le_target.inverse_transform(
-        np.arange(len(le_target.classes_))
-    )
-    df_proba = pd.DataFrame({
-        "Nível de Obesidade": classes_nomes,
-        "Probabilidade (%)": (predicao_proba * 100).round(2),
-    }).sort_values("Probabilidade (%)", ascending=False)
 
-    st.dataframe(df_proba, use_container_width=True, hide_index=True)
+# ══════════════════════════════════════════════════════
+# ABAS PRINCIPAIS
+# ══════════════════════════════════════════════════════
+tab1, tab2, tab3 = st.tabs([
+    "🔬 Diagnóstico Preditivo",
+    "📊 Painel Analítico",
+    "🤖 Desempenho do Modelo"
+])
 
-    # IMC calculado
-    imc = weight / (height ** 2)
-    st.info(f"📐 IMC calculado: **{imc:.2f}** kg/m²")
 
-# ── Rodapé ────────────────────────────────────────────────────────────────────
-st.divider()
-st.caption(
-    f"Modelo utilizado: **{pacote['nome_modelo']}** | "
-    f"Acurácia: **{pacote['acuracia']*100:.1f}%** | "
-    f"F1-Score: **{pacote['f1_score']*100:.1f}%**"
-)
-st.caption("⚠️ Este sistema é uma ferramenta de apoio à decisão. O diagnóstico final deve ser realizado por um profissional de saúde.")
+# ══════════════════════════════════════════════════════
+# ABA 1 — DIAGNÓSTICO
+# ══════════════════════════════════════════════════════
+with tab1:
+    if predict_btn or "pred_nome" in st.session_state:
+        if predict_btn:
+            pred_nome, probs, classes = fazer_predicao()
+            st.session_state["pred_nome"] = pred_nome
+            st.session_state["probs"]     = probs
+            st.session_state["classes"]   = classes
+        else:
+            pred_nome = st.session_state["pred_nome"]
+            probs     = st.session_state["probs"]
+            classes   = st.session_state["classes"]
+
+        pred_pt  = CLASSE_PT.get(pred_nome, pred_nome)
+        css_cls  = classe_css(pred_nome)
+        emoji    = emoji_classe(pred_nome)
+        confianca= probs.max() * 100
+
+        col1, col2 = st.columns([1, 1], gap="large")
+
+        with col1:
+            st.markdown(f"""
+            <div class="card {css_cls}" style="text-align:center; padding:36px">
+                <div style="font-size:3.5rem; margin-bottom:8px">{emoji}</div>
+                <div style="font-size:0.75rem; letter-spacing:0.15em; color:#555; margin-bottom:6px">DIAGNÓSTICO PREDITIVO</div>
+                <div style="font-family:'DM Serif Display',serif; font-size:2rem; color:#1a1a2e; line-height:1.2">{pred_pt}</div>
+                <div style="font-size:0.85rem; color:#555; margin-top:8px">Confiança do modelo: <strong>{confianca:.1f}%</strong></div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # IMC calculado
+            imc_class = (
+                "Abaixo do Peso" if IMC < 18.5 else
+                "Peso Normal"    if IMC < 25   else
+                "Sobrepeso"      if IMC < 30   else
+                "Obesidade"
+            )
+            st.markdown(f"""
+            <div class="card" style="display:flex; justify-content:space-around; align-items:center; padding:20px 28px">
+                <div style="text-align:center">
+                    <div class="metric-value">{IMC}</div>
+                    <div class="metric-label">IMC Calculado</div>
+                </div>
+                <div style="width:1px; background:#e2e8f0; height:50px"></div>
+                <div style="text-align:center">
+                    <div style="font-size:1rem; font-weight:600; color:#0f2342">{imc_class}</div>
+                    <div class="metric-label">Classificação OMS</div>
+                </div>
+                <div style="width:1px; background:#e2e8f0; height:50px"></div>
+                <div style="text-align:center">
+                    <div class="metric-value">{peso:.0f}</div>
+                    <div class="metric-label">Peso (kg)</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col2:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("**📊 Probabilidade por classe**")
+
+            prob_df = pd.DataFrame({
+                "Classe": [CLASSE_PT.get(c, c) for c in classes],
+                "Prob":   probs * 100
+            }).sort_values("Prob", ascending=True)
+
+            COR_MAP = {
+                "Abaixo do Peso":    "#1e88e5",
+                "Peso Normal":       "#43a047",
+                "Sobrepeso Grau I":  "#fb8c00",
+                "Sobrepeso Grau II": "#f4511e",
+                "Obesidade Tipo I":  "#e53935",
+                "Obesidade Tipo II": "#c62828",
+                "Obesidade Tipo III":"#880e4f",
+            }
+            cores_barras = [
+                COR_MAP.get(c, "#64748b") for c in prob_df["Classe"]
+            ]
+
+            fig, ax = plt.subplots(figsize=(6, 4))
+            fig.patch.set_facecolor("white")
+            ax.set_facecolor("white")
+            bars = ax.barh(prob_df["Classe"], prob_df["Prob"],
+                           color=cores_barras, edgecolor="white",
+                           height=0.55, alpha=0.88)
+            for bar, val in zip(bars, prob_df["Prob"]):
+                ax.text(min(val + 1.5, 101), bar.get_y() + bar.get_height()/2,
+                        f"{val:.1f}%", va="center", fontsize=9,
+                        color="#333", fontweight="bold")
+            ax.set_xlim(0, 115)
+            ax.set_xlabel("Probabilidade (%)", fontsize=9, color="#555")
+            ax.tick_params(axis="both", labelsize=9, colors="#555")
+            ax.spines[["top","right","bottom"]].set_visible(False)
+            ax.set_axisbelow(True)
+            ax.xaxis.grid(True, linestyle="--", alpha=0.4)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    else:
+        st.markdown("""
+        <div class="card" style="text-align:center; padding:60px 40px; border: 2px dashed #cbd5e1">
+            <div style="font-size:3rem; margin-bottom:12px">🩺</div>
+            <div style="font-family:'DM Serif Display',serif; font-size:1.4rem; color:#0f2342; margin-bottom:8px">
+                Pronto para analisar
+            </div>
+            <div style="color:#64748b; font-size:0.95rem">
+                Preencha os dados do paciente na barra lateral<br>
+                e clique em <strong>Analisar Paciente</strong>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════════════
+# ABA 2 — PAINEL ANALÍTICO
+# ══════════════════════════════════════════════════════
+with tab2:
+    st.markdown("### 📊 Visão Analítica do Dataset")
+    st.markdown("Insights sobre os 2.111 pacientes utilizados para treinar o modelo.")
+
+    # ── KPIs rápidos
+    c1, c2, c3, c4 = st.columns(4)
+    obesos_pct = df["Obesity"].str.contains("Obesity").mean() * 100
+    sobrepeso_pct = df["Obesity"].str.contains("Overweight").mean() * 100
+    normal_pct = (df["Obesity"] == "Normal_Weight").mean() * 100
+    hist_pct   = (df["family_history"] == "yes").mean() * 100
+
+    for col, val, label, icon in [
+        (c1, obesos_pct,   "Com Obesidade",       "🔴"),
+        (c2, sobrepeso_pct,"Com Sobrepeso",        "🟡"),
+        (c3, normal_pct,   "Peso Normal",          "🟢"),
+        (c4, hist_pct,     "Hist. Familiar",       "🧬"),
+    ]:
+        with col:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div style="font-size:1.5rem">{icon}</div>
+                <div class="metric-value">{val:.0f}%</div>
+                <div class="metric-label">{label}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Gráfico 1: distribuição por classe + gênero
+    col_a, col_b = st.columns(2, gap="large")
+
+    with col_a:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("**Distribuição por Nível de Obesidade e Gênero**")
+        fig, ax = plt.subplots(figsize=(6, 4))
+        fig.patch.set_facecolor("white")
+        ax.set_facecolor("white")
+        order = ["Insufficient_Weight","Normal_Weight",
+                 "Overweight_Level_I","Overweight_Level_II",
+                 "Obesity_Type_I","Obesity_Type_II","Obesity_Type_III"]
+        pal = {"Male": "#1e5fa8", "Female": "#e91e8c"}
+        data_plot = df[df["Obesity"].isin(order)]
+        sns.countplot(data=data_plot, y="Obesity", hue="Gender",
+                      order=order, palette=pal, ax=ax, edgecolor="white")
+        ax.set_ylabel("")
+        ax.set_xlabel("Nº de Pacientes", fontsize=9)
+        yticklabels = [CLASSE_PT.get(t.get_text(), t.get_text()) for t in ax.get_yticklabels()]
+        ax.set_yticklabels(yticklabels, fontsize=8)
+        ax.spines[["top","right"]].set_visible(False)
+        ax.tick_params(labelsize=8)
+        ax.legend(title="Gênero", fontsize=8, title_fontsize=8)
+        plt.tight_layout()
+        st.pyplot(fig); plt.close()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col_b:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("**Distribuição de Peso por Classe de Obesidade**")
+        fig, ax = plt.subplots(figsize=(6, 4))
+        fig.patch.set_facecolor("white")
+        ax.set_facecolor("white")
+        CORES_CLASSE = {
+            "Insufficient_Weight":"#1e88e5","Normal_Weight":"#43a047",
+            "Overweight_Level_I":"#fb8c00","Overweight_Level_II":"#f4511e",
+            "Obesity_Type_I":"#e53935","Obesity_Type_II":"#c62828","Obesity_Type_III":"#880e4f",
+        }
+        for classe in order:
+            dados_c = df[df["Obesity"] == classe]["Weight"]
+            ax.boxplot(dados_c, positions=[order.index(classe)],
+                       patch_artist=True,
+                       boxprops=dict(facecolor=CORES_CLASSE.get(classe,"#888"), alpha=0.7),
+                       medianprops=dict(color="white", linewidth=2),
+                       whiskerprops=dict(color="#aaa"),
+                       capprops=dict(color="#aaa"),
+                       flierprops=dict(marker="o", markerfacecolor="#aaa", markersize=2, alpha=0.4),
+                       widths=0.5)
+        ax.set_xticks(range(len(order)))
+        ax.set_xticklabels([CLASSE_PT.get(c,c) for c in order],
+                           rotation=35, ha="right", fontsize=7)
+        ax.set_ylabel("Peso (kg)", fontsize=9)
+        ax.spines[["top","right"]].set_visible(False)
+        plt.tight_layout()
+        st.pyplot(fig); plt.close()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # ── Gráfico 2: histórico familiar e atividade física
+    col_c, col_d = st.columns(2, gap="large")
+
+    with col_c:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("**Histórico Familiar vs. Nível de Obesidade**")
+        fig, ax = plt.subplots(figsize=(6, 3.5))
+        fig.patch.set_facecolor("white")
+        ax.set_facecolor("white")
+        cross = pd.crosstab(df["Obesity"], df["family_history"], normalize="index") * 100
+        cross = cross.reindex(order)
+        cross.rename(index=CLASSE_PT, inplace=True)
+        cross[["yes","no"]].plot(kind="barh", ax=ax, color=["#0f2342","#93b4d4"],
+                                  edgecolor="white", width=0.6)
+        ax.set_xlabel("% de Pacientes", fontsize=9)
+        ax.set_ylabel("")
+        ax.tick_params(labelsize=8)
+        ax.spines[["top","right"]].set_visible(False)
+        ax.legend(["Com hist. familiar","Sem hist. familiar"],
+                  fontsize=8, loc="lower right")
+        plt.tight_layout()
+        st.pyplot(fig); plt.close()
+        st.markdown("""
+        <p style="font-size:0.8rem; color:#64748b; margin-top:8px">
+        💡 <strong>Insight:</strong> Pacientes com obesidade mais severa têm histórico familiar predominante, 
+        sugerindo forte componente genético.
+        </p>
+        """, unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col_d:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("**Atividade Física Média por Classe**")
+        fig, ax = plt.subplots(figsize=(6, 3.5))
+        fig.patch.set_facecolor("white")
+        ax.set_facecolor("white")
+        faf_media = df.groupby("Obesity")["FAF"].mean().reindex(order)
+        faf_media.index = [CLASSE_PT.get(i, i) for i in faf_media.index]
+        cores_faf = ["#43a047" if v >= faf_media.mean() else "#e53935"
+                     for v in faf_media.values]
+        bars = ax.barh(faf_media.index, faf_media.values,
+                       color=cores_faf, edgecolor="white", alpha=0.85, height=0.55)
+        ax.axvline(faf_media.mean(), color="#888", linestyle="--",
+                   alpha=0.6, linewidth=1, label="Média geral")
+        ax.set_xlabel("Freq. de Atividade Física (0–3)", fontsize=9)
+        ax.tick_params(labelsize=8)
+        ax.spines[["top","right"]].set_visible(False)
+        ax.legend(fontsize=8)
+        plt.tight_layout()
+        st.pyplot(fig); plt.close()
+        st.markdown("""
+        <p style="font-size:0.8rem; color:#64748b; margin-top:8px">
+        💡 <strong>Insight:</strong> Pacientes com obesidade severa praticam significativamente 
+        menos atividade física que a média da amostra.
+        </p>
+        """, unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # ── Gráfico 3: importância das features
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("**🔑 Fatores Mais Determinantes para o Diagnóstico**")
+    feat_imp = art["feat_imp"].copy()
+    feat_imp["Feature_PT"] = feat_imp["Feature"].map({
+        "Weight":"Peso","Height":"Altura","Age":"Idade",
+        "Gender":"Gênero","FAF":"Ativ. Física","FCVC":"Consumo Vegetais",
+        "NCP":"Nº Refeições","CH2O":"Consumo Água","TUE":"Tempo em Tela",
+        "family_history":"Hist. Familiar","FAVC":"Alim. Calórico",
+        "CAEC":"Come Entre Refeições","CALC":"Álcool",
+        "SMOKE":"Fuma","SCC":"Monitora Calorias","MTRANS":"Transporte",
+    }).fillna(feat_imp["Feature"])
+
+    fig, ax = plt.subplots(figsize=(12, 4))
+    fig.patch.set_facecolor("white")
+    ax.set_facecolor("white")
+    top = feat_imp.head(10).iloc[::-1]
+    cores_feat = ["#0f2342" if i >= len(top)-3 else "#93b4d4"
+                  for i in range(len(top))]
+    bars = ax.barh(top["Feature_PT"], top["Importância"],
+                   color=cores_feat, edgecolor="white", height=0.55, alpha=0.9)
+    for bar, val in zip(bars, top["Importância"]):
+        ax.text(val + 0.001, bar.get_y() + bar.get_height()/2,
+                f"{val:.3f}", va="center", fontsize=9, color="#333")
+    ax.set_xlabel("Importância Relativa", fontsize=10)
+    ax.spines[["top","right","bottom"]].set_visible(False)
+    ax.tick_params(labelsize=10)
+    ax.xaxis.grid(True, linestyle="--", alpha=0.3)
+    plt.tight_layout()
+    st.pyplot(fig); plt.close()
+    st.markdown("""
+    <p style="font-size:0.8rem; color:#64748b; margin-top:8px">
+    💡 <strong>Insight:</strong> Peso e altura dominam o poder preditivo (o modelo aprende algo próximo ao IMC). 
+    Fatores comportamentais como atividade física e alimentação aparecem como secundários — mas são os 
+    mais <em>acionáveis</em> para intervenção médica.
+    </p>
+    """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════════════
+# ABA 3 — DESEMPENHO DO MODELO
+# ══════════════════════════════════════════════════════
+with tab3:
+    st.markdown("### 🤖 Avaliação Técnica do Modelo")
+
+    # KPIs do modelo
+    c1, c2, c3, c4 = st.columns(4)
+    for col, val, label in [
+        (c1, f"{art['acc']*100:.1f}%", "Acurácia"),
+        (c2, f"{art['f1']*100:.1f}%",  "F1-Score"),
+        (c3, nome_melhor,               "Algoritmo Selecionado"),
+        (c4, "5 folds",                 "Validação Cruzada"),
+    ]:
+        with col:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-value" style="font-size:1.6rem">{val}</div>
+                <div class="metric-label">{label}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    col_e, col_f = st.columns(2, gap="large")
+
+    with col_e:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("**Comparativo de Modelos — Validação Cruzada**")
+        res = art["resultados_cv"]
+        nomes_m = list(res.keys())
+        medias_m = [res[n] for n in nomes_m]
+        melhor_i = int(np.argmax(medias_m))
+        fig, ax = plt.subplots(figsize=(6, 3.8))
+        fig.patch.set_facecolor("white"); ax.set_facecolor("white")
+        cores_m = ["#0f2342" if i == melhor_i else "#93b4d4" for i in range(len(nomes_m))]
+        bars = ax.barh(nomes_m, medias_m, color=cores_m, edgecolor="white",
+                       height=0.55, alpha=0.9)
+        for bar, val in zip(bars, medias_m):
+            ax.text(val + 0.002, bar.get_y() + bar.get_height()/2,
+                    f"{val:.3f}", va="center", fontsize=9)
+        ax.set_xlim(0, 1.1)
+        ax.set_xlabel("Acurácia Média", fontsize=9)
+        ax.spines[["top","right"]].set_visible(False)
+        ax.tick_params(labelsize=8)
+        ax.xaxis.grid(True, linestyle="--", alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig); plt.close()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col_f:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("**Matriz de Confusão — Conjunto de Teste**")
+        fig, ax = plt.subplots(figsize=(6, 4.5))
+        fig.patch.set_facecolor("white"); ax.set_facecolor("white")
+        labels_pt = [CLASSE_PT.get(c, c) for c in le_target.classes_]
+        sns.heatmap(art["cm"], annot=True, fmt="d", cmap="Blues",
+                    xticklabels=labels_pt, yticklabels=labels_pt,
+                    linewidths=0.4, ax=ax, cbar=False)
+        ax.set_xlabel("Previsto", fontsize=9)
+        ax.set_ylabel("Real", fontsize=9)
+        ax.tick_params(axis="x", rotation=35, labelsize=7)
+        ax.tick_params(axis="y", rotation=0, labelsize=7)
+        plt.tight_layout()
+        st.pyplot(fig); plt.close()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # Relatório por classe
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("**Desempenho por Classe de Obesidade**")
+    report = art["report"]
+    rows = []
+    for classe in le_target.classes_:
+        if classe in report:
+            r = report[classe]
+            rows.append({
+                "Classe":    CLASSE_PT.get(classe, classe),
+                "Precisão":  f"{r['precision']:.3f}",
+                "Recall":    f"{r['recall']:.3f}",
+                "F1-Score":  f"{r['f1-score']:.3f}",
+                "Suporte":   int(r["support"]),
+            })
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
