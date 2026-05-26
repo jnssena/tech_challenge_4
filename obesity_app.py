@@ -7,13 +7,10 @@ import seaborn as sns
 import joblib
 import os
 
-from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import (
     accuracy_score, f1_score, classification_report,
     confusion_matrix
@@ -227,27 +224,12 @@ def treinar_modelo(df_hash):
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    modelos = {
-        "Regressão Logística": Pipeline([("scaler", StandardScaler()),
-            ("modelo", LogisticRegression(max_iter=1000, random_state=42))]),
-        "Árvore de Decisão": Pipeline([("scaler", StandardScaler()),
-            ("modelo", DecisionTreeClassifier(random_state=42))]),
-        "Random Forest": Pipeline([("scaler", StandardScaler()),
-            ("modelo", RandomForestClassifier(n_estimators=100, random_state=42))]),
-        "Gradient Boosting": Pipeline([("scaler", StandardScaler()),
-            ("modelo", GradientBoostingClassifier(n_estimators=100, random_state=42))]),
-        "KNN": Pipeline([("scaler", StandardScaler()),
-            ("modelo", KNeighborsClassifier(n_neighbors=5))]),
-    }
 
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    resultados = {}
-    for nome, pipe in modelos.items():
-        scores = cross_val_score(pipe, X_train, y_train, cv=cv, scoring="accuracy")
-        resultados[nome] = scores.mean()
-
-    nome_melhor = max(resultados, key=resultados.get)
-    modelo_final = modelos[nome_melhor]
+    # Modelo fixo: Gradient Boosting
+    modelo_final = Pipeline([
+        ("scaler", StandardScaler()),
+        ("modelo", GradientBoostingClassifier(n_estimators=100, random_state=42))
+    ])
     modelo_final.fit(X_train, y_train)
 
     y_pred = modelo_final.predict(X_test)
@@ -282,12 +264,7 @@ def treinar_modelo(df_hash):
         "f1": f1,
         "cm": cm,
         "report": report,
-        "resultados_cv": resultados,
-        "nome_melhor": nome_melhor,
         "feat_imp": feat_imp,
-        "X_test": X_test,
-        "y_test": y_test,
-        "y_pred": y_pred,
     }
 
 
@@ -303,7 +280,6 @@ encoders      = art["encoders"]
 le_target     = art["le_target"]
 feat_cat      = art["colunas_features_cat"]
 X_cols        = art["X_columns"]
-nome_melhor   = art["nome_melhor"]
 
 
 # ══════════════════════════════════════════════════════
@@ -322,27 +298,55 @@ with st.sidebar:
     st.markdown("### 👤 Dados do Paciente")
 
     with st.expander("📋 Dados Físicos", expanded=True):
-        genero = st.selectbox("Gênero", ["Male", "Female"])
+        genero_pt = st.selectbox("Gênero", ["Masculino", "Feminino"])
+        genero = {"Masculino": "Male", "Feminino": "Female"}[genero_pt]
+
         idade  = st.slider("Idade", 10, 80, 30)
         altura = st.slider("Altura (m)", 1.40, 2.10, 1.70, 0.01)
         peso   = st.slider("Peso (kg)", 30.0, 180.0, 75.0, 0.5)
 
     with st.expander("🍽️ Hábitos Alimentares", expanded=True):
-        hist_fam = st.selectbox("Histórico familiar de sobrepeso", ["yes", "no"])
-        favc     = st.selectbox("Consome alimentos calóricos frequentemente?", ["yes", "no"])
-        fcvc     = st.slider("Freq. consumo de vegetais (1=baixo, 3=alto)", 1.0, 3.0, 2.0, 0.5)
-        ncp      = st.slider("Nº de refeições principais por dia", 1.0, 4.0, 3.0, 0.5)
-        caec     = st.selectbox("Come entre as refeições?", ["no", "Sometimes", "Frequently", "Always"])
-        ch2o     = st.slider("Litros de água por dia (1–3)", 1.0, 3.0, 2.0, 0.5)
-        scc      = st.selectbox("Monitora calorias consumidas?", ["no", "yes"])
+        hist_fam_pt = st.selectbox("Histórico familiar de sobrepeso", ["Sim", "Não"])
+        hist_fam = {"Sim": "yes", "Não": "no"}[hist_fam_pt]
+
+        favc_pt = st.selectbox("Consome alimentos calóricos frequentemente?", ["Sim", "Não"])
+        favc = {"Sim": "yes", "Não": "no"}[favc_pt]
+
+        fcvc = st.slider("Freq. consumo de vegetais (1=baixo, 3=alto)", 1.0, 3.0, 2.0, 0.5)
+        ncp  = st.slider("Nº de refeições principais por dia", 1.0, 4.0, 3.0, 0.5)
+
+        caec_pt = st.selectbox("Come entre as refeições?",
+                               ["Não", "Às vezes", "Frequentemente", "Sempre"])
+        caec = {"Não": "no", "Às vezes": "Sometimes",
+                "Frequentemente": "Frequently", "Sempre": "Always"}[caec_pt]
+
+        ch2o = st.slider("Litros de água por dia (1–3)", 1.0, 3.0, 2.0, 0.5)
+
+        scc_pt = st.selectbox("Monitora calorias consumidas?", ["Não", "Sim"])
+        scc = {"Sim": "yes", "Não": "no"}[scc_pt]
 
     with st.expander("🏃 Estilo de Vida", expanded=True):
-        smoke = st.selectbox("Fuma?", ["no", "yes"])
-        faf   = st.slider("Freq. atividade física (0=nunca, 3=sempre)", 0.0, 3.0, 1.0, 0.5)
-        tue   = st.slider("Horas/dia em telas (0–2)", 0.0, 2.0, 1.0, 0.5)
-        calc  = st.selectbox("Freq. consumo de álcool", ["no", "Sometimes", "Frequently", "Always"])
-        mtrans= st.selectbox("Principal meio de transporte", [
-            "Public_Transportation", "Walking", "Automobile", "Motorbike", "Bike"])
+        smoke_pt = st.selectbox("Fuma?", ["Não", "Sim"])
+        smoke = {"Sim": "yes", "Não": "no"}[smoke_pt]
+
+        faf = st.slider("Freq. atividade física (0=nunca, 3=sempre)", 0.0, 3.0, 1.0, 0.5)
+        tue = st.slider("Horas/dia em telas (0–2)", 0.0, 2.0, 1.0, 0.5)
+
+        calc_pt = st.selectbox("Freq. consumo de álcool",
+                               ["Não consome", "Às vezes", "Frequentemente", "Sempre"])
+        calc = {"Não consome": "no", "Às vezes": "Sometimes",
+                "Frequentemente": "Frequently", "Sempre": "Always"}[calc_pt]
+
+        mtrans_pt = st.selectbox("Principal meio de transporte",
+                                 ["Transporte Público", "A pé", "Automóvel",
+                                  "Moto", "Bicicleta"])
+        mtrans = {
+            "Transporte Público": "Public_Transportation",
+            "A pé":               "Walking",
+            "Automóvel":          "Automobile",
+            "Moto":               "Motorbike",
+            "Bicicleta":          "Bike",
+        }[mtrans_pt]
 
     st.markdown("<br>", unsafe_allow_html=True)
     predict_btn = st.button("🔬 Analisar Paciente")
@@ -407,7 +411,7 @@ st.markdown(f"""
         <div>
             <p style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.15em; margin:0">HOSPITAL • SISTEMA DE APOIO DIAGNÓSTICO</p>
             <h1 class="hero-title">ObesityAI</h1>
-            <p class="hero-sub">Predição de obesidade por Machine Learning — Modelo: <strong style="color:white">{nome_melhor}</strong></p>
+            <p class="hero-sub">Predição de obesidade por Machine Learning — Modelo: <strong style="color:white">Gradient Boosting</strong></p>
         </div>
         <div style="display:flex; gap:24px; flex-wrap:wrap">
             <div style="text-align:center">
@@ -431,10 +435,9 @@ st.markdown(f"""
 # ══════════════════════════════════════════════════════
 # ABAS PRINCIPAIS
 # ══════════════════════════════════════════════════════
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2 = st.tabs([
     "🔬 Diagnóstico Preditivo",
     "📊 Painel Analítico",
-    "🤖 Desempenho do Modelo"
 ])
 
 
@@ -738,89 +741,3 @@ with tab2:
     </p>
     """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ══════════════════════════════════════════════════════
-# ABA 3 — DESEMPENHO DO MODELO
-# ══════════════════════════════════════════════════════
-with tab3:
-    st.markdown("### 🤖 Avaliação Técnica do Modelo")
-
-    # KPIs do modelo
-    c1, c2, c3, c4 = st.columns(4)
-    for col, val, label in [
-        (c1, f"{art['acc']*100:.1f}%", "Acurácia"),
-        (c2, f"{art['f1']*100:.1f}%",  "F1-Score"),
-        (c3, nome_melhor,               "Algoritmo Selecionado"),
-        (c4, "5 folds",                 "Validação Cruzada"),
-    ]:
-        with col:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-value" style="font-size:1.6rem">{val}</div>
-                <div class="metric-label">{label}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    col_e, col_f = st.columns(2, gap="large")
-
-    with col_e:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("**Comparativo de Modelos — Validação Cruzada**")
-        res = art["resultados_cv"]
-        nomes_m = list(res.keys())
-        medias_m = [res[n] for n in nomes_m]
-        melhor_i = int(np.argmax(medias_m))
-        fig, ax = plt.subplots(figsize=(6, 3.8))
-        fig.patch.set_facecolor("white"); ax.set_facecolor("white")
-        cores_m = ["#0f2342" if i == melhor_i else "#93b4d4" for i in range(len(nomes_m))]
-        bars = ax.barh(nomes_m, medias_m, color=cores_m, edgecolor="white",
-                       height=0.55, alpha=0.9)
-        for bar, val in zip(bars, medias_m):
-            ax.text(val + 0.002, bar.get_y() + bar.get_height()/2,
-                    f"{val:.3f}", va="center", fontsize=9)
-        ax.set_xlim(0, 1.1)
-        ax.set_xlabel("Acurácia Média", fontsize=9)
-        ax.spines[["top","right"]].set_visible(False)
-        ax.tick_params(labelsize=8)
-        ax.xaxis.grid(True, linestyle="--", alpha=0.3)
-        plt.tight_layout()
-        st.pyplot(fig); plt.close()
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col_f:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("**Matriz de Confusão — Conjunto de Teste**")
-        fig, ax = plt.subplots(figsize=(6, 4.5))
-        fig.patch.set_facecolor("white"); ax.set_facecolor("white")
-        labels_pt = [CLASSE_PT.get(c, c) for c in le_target.classes_]
-        sns.heatmap(art["cm"], annot=True, fmt="d", cmap="Blues",
-                    xticklabels=labels_pt, yticklabels=labels_pt,
-                    linewidths=0.4, ax=ax, cbar=False)
-        ax.set_xlabel("Previsto", fontsize=9)
-        ax.set_ylabel("Real", fontsize=9)
-        ax.tick_params(axis="x", rotation=35, labelsize=7)
-        ax.tick_params(axis="y", rotation=0, labelsize=7)
-        plt.tight_layout()
-        st.pyplot(fig); plt.close()
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # Relatório por classe
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("**Desempenho por Classe de Obesidade**")
-    report = art["report"]
-    rows = []
-    for classe in le_target.classes_:
-        if classe in report:
-            r = report[classe]
-            rows.append({
-                "Classe":    CLASSE_PT.get(classe, classe),
-                "Precisão":  f"{r['precision']:.3f}",
-                "Recall":    f"{r['recall']:.3f}",
-                "F1-Score":  f"{r['f1-score']:.3f}",
-                "Suporte":   int(r["support"]),
-            })
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
