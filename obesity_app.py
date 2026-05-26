@@ -181,7 +181,7 @@ html, body, [class*="css"] {
 }
 
 /* Oculta elementos padrão do streamlit */
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -729,7 +729,7 @@ with tab2:
                 f"{val:.3f}", va="center", fontsize=9, color="#333")
     ax.set_xlabel("Importância Relativa", fontsize=10)
     ax.spines[["top","right","bottom"]].set_visible(False)
-    ax.tick_params(labelsize=10)
+    ax.tick_params(labelsize=10)streamlit run app.py
     ax.xaxis.grid(True, linestyle="--", alpha=0.3)
     plt.tight_layout()
     st.pyplot(fig); plt.close()
