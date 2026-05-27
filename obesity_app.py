@@ -224,7 +224,6 @@ def treinar_modelo(df_hash):
     )
 
 
-    # Modelo fixo: Gradient Boosting
     modelo_final = Pipeline([
         ("scaler", StandardScaler()),
         ("modelo", GradientBoostingClassifier(n_estimators=100, random_state=42))
@@ -294,9 +293,9 @@ with st.sidebar:
     <hr style='border-color:#1e3a5f; margin-bottom:20px'>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 👤 Dados do Paciente")
+    st.markdown("### Dados do Paciente")
 
-    with st.expander("📋 Dados Físicos", expanded=True):
+    with st.expander("Dados Físicos", expanded=True):
         genero_pt = st.selectbox("Gênero", ["Masculino", "Feminino"])
         genero = {"Masculino": "Male", "Feminino": "Female"}[genero_pt]
 
@@ -304,7 +303,7 @@ with st.sidebar:
         altura = st.slider("Altura (m)", 1.40, 2.10, 1.70, 0.01)
         peso   = st.slider("Peso (kg)", 30.0, 180.0, 75.0, 0.5)
 
-    with st.expander("🍽️ Hábitos Alimentares", expanded=True):
+    with st.expander("Hábitos Alimentares", expanded=True):
         hist_fam_pt = st.selectbox("Histórico familiar de sobrepeso", ["Sim", "Não"])
         hist_fam = {"Sim": "yes", "Não": "no"}[hist_fam_pt]
 
@@ -324,7 +323,7 @@ with st.sidebar:
         scc_pt = st.selectbox("Monitora calorias consumidas?", ["Não", "Sim"])
         scc = {"Sim": "yes", "Não": "no"}[scc_pt]
 
-    with st.expander("🏃 Estilo de Vida", expanded=True):
+    with st.expander("Estilo de Vida", expanded=True):
         smoke_pt = st.selectbox("Fuma?", ["Não", "Sim"])
         smoke = {"Sim": "yes", "Não": "no"}[smoke_pt]
 
@@ -348,7 +347,7 @@ with st.sidebar:
         }[mtrans_pt]
 
     st.markdown("<br>", unsafe_allow_html=True)
-    predict_btn = st.button("🔬 Analisar Paciente")
+    predict_btn = st.button("Relizar Diagnóstico")
 
 
 # ══════════════════════════════════════════════════════
@@ -408,22 +407,16 @@ st.markdown(f"""
 <div class="card-blue" style="padding:32px 36px; margin-bottom:24px">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px">
         <div>
-            <p style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.15em; margin:0">HOSPITAL • SISTEMA DE APOIO DIAGNÓSTICO</p>
-            <h1 class="hero-title">ObesityAI</h1>
-            <p class="hero-sub">Predição de obesidade por Machine Learning — Modelo: <strong style="color:white">Gradient Boosting</strong></p>
+            <h1 class="hero-title">Sistema de Diagnóstico</h1>
+            <p class="hero-sub">Modelo de Machine Learning — <strong style="color:white">Gradient Boosting</strong></p>
         </div>
         <div style="display:flex; gap:24px; flex-wrap:wrap">
             <div style="text-align:center">
                 <div style="font-family:'DM Serif Display',serif; font-size:2rem; color:white">{art['acc']*100:.1f}%</div>
-                <div style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.1em">ACURÁCIA</div>
-            </div>
-            <div style="text-align:center">
-                <div style="font-family:'DM Serif Display',serif; font-size:2rem; color:white">{art['f1']*100:.1f}%</div>
-                <div style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.1em">F1-SCORE</div>
-            </div>
+                <div style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.1em">Acurácia</div>
             <div style="text-align:center">
                 <div style="font-family:'DM Serif Display',serif; font-size:2rem; color:white">2.1k</div>
-                <div style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.1em">PACIENTES</div>
+                <div style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.1em">Pacientes</div>
             </div>
         </div>
     </div>
@@ -435,8 +428,8 @@ st.markdown(f"""
 # ABAS PRINCIPAIS
 # ══════════════════════════════════════════════════════
 tab1, tab2 = st.tabs([
-    "🔬 Diagnóstico Preditivo",
-    "📊 Painel Analítico",
+    "Diagnóstico",
+    "Painel Analítico",
 ])
 
 
@@ -544,13 +537,9 @@ with tab1:
     else:
         st.markdown("""
         <div class="card" style="text-align:center; padding:60px 40px; border: 2px dashed #cbd5e1">
-            <div style="font-size:3rem; margin-bottom:12px">🩺</div>
-            <div style="font-family:'DM Serif Display',serif; font-size:1.4rem; color:#0f2342; margin-bottom:8px">
-                Pronto para analisar
-            </div>
             <div style="color:#64748b; font-size:0.95rem">
                 Preencha os dados do paciente na barra lateral<br>
-                e clique em <strong>Analisar Paciente</strong>
+                e clique em <strong>Relizar Diagnóstico</strong>
             </div>
         </div>
         """, unsafe_allow_html=True)
