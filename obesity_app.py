@@ -34,42 +34,46 @@ st.set_page_config(
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-/* ── Fonte Inter em absolutamente tudo ── */
-html, body, [class*="css"], * {
+/* ── Fonte Inter em tudo, preservando Material Icons ── */
+html, body, [class*="css"] {
     font-family: 'Inter', sans-serif !important;
 }
-
-/* ── Fundo geral: cinza muito suave ── */
-.stApp {
-    background: #f2f2f2;
+.material-icons {
+    font-family: 'Material Icons' !important;
 }
 
-/* ── Sidebar: tom marrom escuro #2c1810 ── */
+/* Fundo geral */
+.stApp {
+    background: #f0f4f8;
+}
+
+/* Sidebar */
 [data-testid="stSidebar"] {
     background: #2c1810 !important;
-    border-right: 1px solid #3d2318;
+    border-right: 1px solid #1e3a5f;
 }
 [data-testid="stSidebar"] * {
-    color: #f0e6df !important;
+    color: #e8f0fe !important;
 }
 [data-testid="stSidebar"] .stSelectbox label,
 [data-testid="stSidebar"] .stSlider label,
 [data-testid="stSidebar"] .stNumberInput label {
-    color: #c9a898 !important;
-    font-size: 0.82rem !important;
+    color: #93b4d4 !important;
+    font-size: 0.78rem !important;
     font-weight: 500 !important;
-    letter-spacing: 0em;
-    text-transform: none;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
-[data-testid="stSidebar"] h1,
-[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h1, 
+[data-testid="stSidebar"] h2, 
 [data-testid="stSidebar"] h3 {
     color: #ffffff !important;
-    font-family: 'Inter', sans-serif !important;
+    font-family: 'Inter', serif !important;
 }
 
-/* ── Cards brancos ── */
+/* Cards */
 .card {
     background: white;
     border-radius: 16px;
@@ -77,10 +81,8 @@ html, body, [class*="css"], * {
     box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
     margin-bottom: 20px;
 }
-
-/* ── Card header: gradiente marrom → marrom médio ── */
 .card-blue {
-    background: linear-gradient(135deg, #2c1810 0%, #5a3020 100%);
+    background: linear-gradient(135deg, #0f2342 0%, #2c1810  100%);
     color: white;
     border-radius: 16px;
     padding: 24px 28px;
@@ -90,13 +92,19 @@ html, body, [class*="css"], * {
     color: white !important;
 }
 
-/* ── Cards de resultado do diagnóstico ── */
+/* Resultado */
+.result-box {
+    border-radius: 16px;
+    padding: 28px;
+    text-align: center;
+    margin: 12px 0;
+}
 .result-normal    { background: #e8f5e9; border: 2px solid #4caf50; }
 .result-overweight{ background: #fff8e1; border: 2px solid #ffb300; }
 .result-obese     { background: #fce4ec; border: 2px solid #e91e63; }
 .result-insuf     { background: #e3f2fd; border: 2px solid #1e88e5; }
 
-/* ── KPI cards do painel analítico ── */
+/* Métricas */
 .metric-card {
     background: white;
     border-radius: 12px;
@@ -105,10 +113,9 @@ html, body, [class*="css"], * {
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 .metric-value {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', serif;
     font-size: 2.4rem;
-    font-weight: 600;
-    color: #2c1810;
+    color: #0f2342;
     line-height: 1;
 }
 .metric-label {
@@ -119,35 +126,34 @@ html, body, [class*="css"], * {
     margin-top: 6px;
 }
 
-/* ── Título principal do header ── */
+/* Título hero */
 .hero-title {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', serif;
     font-size: 2.2rem;
-    font-weight: 600;
     color: white;
     margin: 0;
     line-height: 1.2;
 }
 .hero-sub {
     font-size: 0.9rem;
-    color: #c9a898;
+    color: #93b4d4;
     margin-top: 6px;
 }
 
-/* ── Abas: cor ativa alinhada ao tema marrom ── */
+/* Tab styling */
 .stTabs [data-baseweb="tab"] {
     font-weight: 500;
     color: #64748b;
     border-radius: 8px 8px 0 0;
 }
 .stTabs [aria-selected="true"] {
-    color: #2c1810 !important;
-    border-bottom: 2px solid #2c1810 !important;
+    color: #0f2342 !important;
+    border-bottom: 2px solid #0f2342 !important;
 }
 
-/* ── Botão: marrom coerente com a sidebar ── */
+/* Botão principal */
 .stButton > button {
-    background: linear-gradient(135deg, #2c1810, #5a3020) !important;
+    background: linear-gradient(135deg, #0f2342, #1e5fa8) !important;
     color: white !important;
     border: none !important;
     border-radius: 10px !important;
@@ -160,11 +166,23 @@ html, body, [class*="css"], * {
 }
 .stButton > button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(44,24,16,0.4) !important;
+    box-shadow: 0 6px 20px rgba(15,35,66,0.35) !important;
 }
 
 /* Divisor */
 .divider { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+
+/* Insight badge */
+.badge {
+    display: inline-block;
+    background: #e8f0fe;
+    color: #1a56db;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 6px;
+}
 
 /* Oculta elementos padrão do streamlit */
 #MainMenu, footer { visibility: hidden; }
@@ -273,11 +291,11 @@ X_cols        = art["X_columns"]
 with st.sidebar:
     st.markdown("""
     <div style='padding: 10px 0 20px 0'>
-        <p style='font-size:0.7rem; color:#c9a898; letter-spacing:0.12em; margin:0; text-transform:uppercase'>Sistema Preditivo</p>
-        <h1 style='font-family:Inter,sans-serif; font-size:1.6rem; font-weight:600; margin:4px 0 0 0; color:white'>ObesityAI</h1>
-        <p style='font-size:0.8rem; color:#c9a898; margin:4px 0 0 0'>Apoio ao diagnóstico médico</p>
+        <p style='font-size:0.7rem; color:#4a7fa5; letter-spacing:0.15em; margin:0'>SISTEMA PREDITIVO</p>
+        <h1 style='font-family:DM Serif Display,serif; font-size:1.6rem; margin:4px 0 0 0'>ObesityAI</h1>
+        <p style='font-size:0.8rem; color:#4a7fa5; margin:4px 0 0 0'>Apoio ao diagnóstico médico</p>
     </div>
-    <hr style='border-color:#3d2318; margin-bottom:20px'>
+    <hr style='border-color:#1e3a5f; margin-bottom:20px'>
     """, unsafe_allow_html=True)
 
     st.markdown("### Dados do Paciente")
@@ -399,12 +417,11 @@ st.markdown(f"""
         </div>
         <div style="display:flex; gap:24px; flex-wrap:wrap">
             <div style="text-align:center">
-                <div style="font-family:'Inter',sans-serif; font-size:2rem; font-weight:600; color:white">{art['acc']*100:.1f}%</div>
-                <div style="font-size:0.7rem; color:#c9a898; letter-spacing:0.1em">Acurácia</div>
-            </div>
+                <div style="font-family:'DM Serif Display',serif; font-size:2rem; color:white">{art['acc']*100:.1f}%</div>
+                <div style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.1em">Acurácia</div>
             <div style="text-align:center">
-                <div style="font-family:'Inter',sans-serif; font-size:2rem; font-weight:600; color:white">{len(df)}</div>
-                <div style="font-size:0.7rem; color:#c9a898; letter-spacing:0.1em">Pacientes</div>
+                <div style="font-family:'DM Serif Display',serif; font-size:2rem; color:white">2.1k</div>
+                <div style="font-size:0.7rem; color:#4a7fa5; letter-spacing:0.1em">Pacientes</div>
             </div>
         </div>
     </div>
@@ -447,8 +464,8 @@ with tab1:
             st.markdown(f"""
             <div class="card {css_cls}" style="text-align:center; padding:36px">
                 <div style="font-size:3.5rem; margin-bottom:8px">{emoji}</div>
-                <div style="font-size:0.75rem; letter-spacing:0.12em; color:#888; margin-bottom:6px">Diagnóstico Preditivo</div>
-                <div style="font-family:'Inter',sans-serif; font-size:2rem; font-weight:600; color:#2c1810; line-height:1.2">{pred_pt}</div>
+                <div style="font-size:0.75rem; letter-spacing:0.15em; color:#555; margin-bottom:6px">DIAGNÓSTICO PREDITIVO</div>
+                <div style="font-family:'DM Serif Display',serif; font-size:2rem; color:#1a1a2e; line-height:1.2">{pred_pt}</div>
                 <div style="font-size:0.85rem; color:#555; margin-top:8px">Confiança do modelo: <strong>{confianca:.1f}%</strong></div>
             </div>
             """, unsafe_allow_html=True)
@@ -468,7 +485,7 @@ with tab1:
                 </div>
                 <div style="width:1px; background:#e2e8f0; height:50px"></div>
                 <div style="text-align:center">
-                    <div style="font-size:1rem; font-weight:600; color:#2c1810">{imc_class}</div>
+                    <div style="font-size:1rem; font-weight:600; color:#0f2342">{imc_class}</div>
                     <div class="metric-label">Classificação OMS</div>
                 </div>
                 <div style="width:1px; background:#e2e8f0; height:50px"></div>
@@ -576,7 +593,7 @@ with tab2:
         order = ["Insufficient_Weight","Normal_Weight",
                  "Overweight_Level_I","Overweight_Level_II",
                  "Obesity_Type_I","Obesity_Type_II","Obesity_Type_III"]
-        pal = {"Male": "#2c1810", "Female": "#e91e8c"}
+        pal = {"Male": "#1e5fa8", "Female": "#e91e8c"}
         data_plot = df[df["Obesity"].isin(order)]
         sns.countplot(data=data_plot, y="Obesity", hue="Gender",
                       order=order, palette=pal, ax=ax, edgecolor="white")
@@ -633,7 +650,7 @@ with tab2:
         cross = pd.crosstab(df["Obesity"], df["family_history"], normalize="index") * 100
         cross = cross.reindex(order)
         cross.rename(index=CLASSE_PT, inplace=True)
-        cross[["yes","no"]].plot(kind="barh", ax=ax, color=["#2c1810","#c9a898"],
+        cross[["yes","no"]].plot(kind="barh", ax=ax, color=["#0f2342","#93b4d4"],
                                   edgecolor="white", width=0.6)
         ax.set_xlabel("% de Pacientes", fontsize=9)
         ax.set_ylabel("")
@@ -696,7 +713,7 @@ with tab2:
     fig.patch.set_facecolor("white")
     ax.set_facecolor("white")
     top = feat_imp.head(10).iloc[::-1]
-    cores_feat = ["#2c1810" if i >= len(top)-3 else "#c9a898"
+    cores_feat = ["#0f2342" if i >= len(top)-3 else "#93b4d4"
                   for i in range(len(top))]
     bars = ax.barh(top["Feature_PT"], top["Importância"],
                    color=cores_feat, edgecolor="white", height=0.55, alpha=0.9)
