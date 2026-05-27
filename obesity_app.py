@@ -278,9 +278,7 @@ X_cols        = art["X_columns"]
 with st.sidebar:
     st.markdown("""
     <div style='padding: 10px 0 20px 0'>
-        <p style='font-size:0.7rem; color:#c9a898; letter-spacing:0.12em; margin:0; text-transform:uppercase'>Sistema Preditivo</p>
-        <h1 style='font-family:Inter,sans-serif; font-size:1.6rem; font-weight:600; margin:4px 0 0 0; color:white'>ObesityAI</h1>
-        <p style='font-size:0.8rem; color:#c9a898; margin:4px 0 0 0'>Apoio ao diagnóstico médico</p>
+        <h1 style='font-family:Inter,sans-serif; font-size:1.6rem; font-weight:600; margin:4px 0 0 0; color:white'>Paciente</h1>
     </div>
     <hr style='border-color:#3d2318; margin-bottom:20px'>
     """, unsafe_allow_html=True)
