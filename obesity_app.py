@@ -23,8 +23,7 @@ warnings.filterwarnings("ignore")
 # CONFIGURAÇÃO DA PÁGINA
 # ══════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="ObesityAI — Sistema de Diagnóstico",
-    page_icon="🏥",
+    page_title="Sistema de Diagnóstico",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -34,10 +33,10 @@ st.set_page_config(
 # ══════════════════════════════════════════════════════
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
 
 html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
 }
 
 /* Fundo geral */
@@ -47,7 +46,7 @@ html, body, [class*="css"] {
 
 /* Sidebar */
 [data-testid="stSidebar"] {
-    background: #0f2342 !important;
+    background: #2c1810 !important;
     border-right: 1px solid #1e3a5f;
 }
 [data-testid="stSidebar"] * {
@@ -66,7 +65,7 @@ html, body, [class*="css"] {
 [data-testid="stSidebar"] h2, 
 [data-testid="stSidebar"] h3 {
     color: #ffffff !important;
-    font-family: 'DM Serif Display', serif !important;
+    font-family: 'Inter', serif !important;
 }
 
 /* Cards */
@@ -78,7 +77,7 @@ html, body, [class*="css"] {
     margin-bottom: 20px;
 }
 .card-blue {
-    background: linear-gradient(135deg, #0f2342 0%, #1a3d6b 100%);
+    background: linear-gradient(135deg, #0f2342 0%, #2c1810  100%);
     color: white;
     border-radius: 16px;
     padding: 24px 28px;
@@ -109,7 +108,7 @@ html, body, [class*="css"] {
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 .metric-value {
-    font-family: 'DM Serif Display', serif;
+    font-family: 'Inter', serif;
     font-size: 2.4rem;
     color: #0f2342;
     line-height: 1;
@@ -124,7 +123,7 @@ html, body, [class*="css"] {
 
 /* Título hero */
 .hero-title {
-    font-family: 'DM Serif Display', serif;
+    font-family: 'Inter', serif;
     font-size: 2.2rem;
     color: white;
     margin: 0;
