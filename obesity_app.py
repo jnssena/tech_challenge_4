@@ -33,11 +33,16 @@ st.set_page_config(
 # ══════════════════════════════════════════════════════
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
-/* ── Fonte Inter em absolutamente tudo ── */
-html, body, [class*="css"], * {
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+
+html, body, [class*="css"] {
     font-family: 'Inter', sans-serif !important;
+}
+.material-icons {
+    font-family: 'Material Icons' !important;
 }
 
 /* ── Fundo geral: cinza muito suave ── */
