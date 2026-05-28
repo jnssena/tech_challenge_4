@@ -276,12 +276,6 @@ X_cols        = art["X_columns"]
 # SIDEBAR — formulário de entrada do paciente
 # ══════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("""
-    <div style='padding: 10px 0 20px 0'>
-        <h1 style='font-family:Inter,sans-serif; font-size:1.6rem; font-weight:600; margin:4px 0 0 0; color:white'>Paciente</h1>
-    </div>
-    <hr style='border-color:#3d2318; margin-bottom:20px'>
-    """, unsafe_allow_html=True)
 
     st.markdown("### Dados do Paciente")
 
