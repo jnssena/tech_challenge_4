@@ -578,6 +578,7 @@ with tab2:
                 <div class="metric-label">{label}</div>
             </div>
             """, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
     # ── Linha 1: Distribuição por Gênero (barras verticais) + Boxplot de Peso
     col_a, col_b = st.columns(2, gap="large")
@@ -670,6 +671,7 @@ with tab2:
         ax.legend(fontsize=8)
         plt.tight_layout()
         st.pyplot(fig); plt.close()
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with col_d:
         st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -696,3 +698,4 @@ with tab2:
         ax.legend(fontsize=8)
         plt.tight_layout()
         st.pyplot(fig); plt.close()
+        st.markdown("</div>", unsafe_allow_html=True)
