@@ -532,8 +532,6 @@ with tab1:
 # ABA 2 — PAINEL ANALÍTICO
 # ══════════════════════════════════════════════════════
 with tab2:
-    st.markdown("### 📊 Visão Analítica do Dataset")
-    st.markdown(f"Insights sobre os {len(df)} pacientes utilizados para treinar o modelo.")
 
     # Paleta de marrons coerente com o tema #2c1810
     TEMA = {
@@ -567,22 +565,19 @@ with tab2:
     hist_pct      = (df["family_history"] == "yes").mean() * 100
 
     c1, c2, c3, c4 = st.columns(4)
-    for col, val, label, icon, fmt in [
-        (c1, obesos_pct,    "Com Obesidade",  "🔴", "{:.0f}%"),
-        (c2, sobrepeso_pct, "Com Sobrepeso",  "🟡", "{:.0f}%"),
-        (c3, imc_medio,     "IMC Médio",      "📊", "{:.1f}"),
-        (c4, hist_pct,      "Hist. Familiar", "🧬", "{:.0f}%"),
+    for col, val, label, fmt in [
+        (c1, obesos_pct, "Com Obesidade", "{:.0f}%"),
+        (c2, sobrepeso_pct, "Com Sobrepeso", "{:.0f}%"),
+        (c3, imc_medio, "IMC Médio", "{:.1f}"),
+        (c4, hist_pct, "Hist. Familiar", "{:.0f}%"),
     ]:
         with col:
             st.markdown(f"""
             <div class="metric-card">
-                <div style="font-size:1.5rem">{icon}</div>
                 <div class="metric-value">{fmt.format(val)}</div>
                 <div class="metric-label">{label}</div>
             </div>
             """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Linha 1: Distribuição por Gênero (barras verticais) + Boxplot de Peso
     col_a, col_b = st.columns(2, gap="large")
@@ -618,7 +613,7 @@ with tab2:
 
     with col_b:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("**Distribuição de Peso por Classe de Obesidade**")
+        st.markdown("**Gráfico Boxplot de Peso por Classe de Obesidade**")
         fig, ax = plt.subplots(figsize=(6, 4.2))
         fig.patch.set_facecolor("white")
         ax.set_facecolor("white")
@@ -645,7 +640,6 @@ with tab2:
         ax.set_axisbelow(True)
         plt.tight_layout()
         st.pyplot(fig); plt.close()
-        st.markdown("</div>", unsafe_allow_html=True)
 
     # ── Linha 2: Consumo de vegetais + Atividade física
     col_c, col_d = st.columns(2, gap="large")
@@ -676,13 +670,6 @@ with tab2:
         ax.legend(fontsize=8)
         plt.tight_layout()
         st.pyplot(fig); plt.close()
-        st.markdown("""
-        <p style="font-size:0.8rem; color:#64748b; margin-top:8px">
-        💡 <strong>Insight:</strong> Níveis mais severos de obesidade tendem a apresentar
-        menor consumo médio de vegetais, reforçando a importância de hábitos alimentares saudáveis.
-        </p>
-        """, unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 
     with col_d:
         st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -709,10 +696,3 @@ with tab2:
         ax.legend(fontsize=8)
         plt.tight_layout()
         st.pyplot(fig); plt.close()
-        st.markdown("""
-        <p style="font-size:0.8rem; color:#64748b; margin-top:8px">
-        💡 <strong>Insight:</strong> Pacientes com obesidade severa praticam significativamente
-        menos atividade física que a média da amostra.
-        </p>
-        """, unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
