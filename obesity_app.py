@@ -82,11 +82,6 @@ html, body, [class*="css"] {
     box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
     margin-bottom: 20px;
 }
-/* Garante texto escuro dentro de cards brancos */
-.card, .card p, .card span, .card div,
-.card strong, .card b, .card label {
-    color: #1a1a1a !important;
-}
 
 /* ── Card header: gradiente marrom → marrom médio ── */
 .card-blue {
@@ -538,55 +533,85 @@ with tab1:
 # ══════════════════════════════════════════════════════
 with tab2:
     st.markdown("### 📊 Visão Analítica do Dataset")
-    st.markdown("Insights sobre os 2.111 pacientes utilizados para treinar o modelo.")
+    st.markdown(f"Insights sobre os {len(df)} pacientes utilizados para treinar o modelo.")
 
-    # ── KPIs rápidos
-    c1, c2, c3, c4 = st.columns(4)
-    obesos_pct = df["Obesity"].str.contains("Obesity").mean() * 100
+    # Paleta de marrons coerente com o tema #2c1810
+    TEMA = {
+        "escuro":    "#2c1810",
+        "medio":     "#5a3020",
+        "claro":     "#8b5e3c",
+        "suave":     "#c9a898",
+        "muitoClaro":"#f0e6df",
+        "acento":    "#a0522d",
+    }
+
+    # Gradiente de 7 tons do mais claro ao mais escuro para as classes de obesidade
+    CORES_CLASSES_TEMA = [
+        "#f0e6df",  # Abaixo do Peso   — tom mais claro
+        "#c9a898",  # Peso Normal
+        "#a0805c",  # Sobrepeso I
+        "#8b5e3c",  # Sobrepeso II
+        "#5a3020",  # Obesidade I
+        "#3d1e10",  # Obesidade II
+        "#2c1810",  # Obesidade III    — tom mais escuro
+    ]
+
+    order = ["Insufficient_Weight","Normal_Weight",
+             "Overweight_Level_I","Overweight_Level_II",
+             "Obesity_Type_I","Obesity_Type_II","Obesity_Type_III"]
+
+    # ── KPIs: Obesidade | Sobrepeso | IMC médio | Hist. Familiar
+    obesos_pct    = df["Obesity"].str.contains("Obesity").mean() * 100
     sobrepeso_pct = df["Obesity"].str.contains("Overweight").mean() * 100
-    normal_pct = (df["Obesity"] == "Normal_Weight").mean() * 100
-    hist_pct   = (df["family_history"] == "yes").mean() * 100
+    imc_medio     = (df["Weight"] / (df["Height"] ** 2)).mean()
+    hist_pct      = (df["family_history"] == "yes").mean() * 100
 
-    for col, val, label, icon in [
-        (c1, obesos_pct,   "Com Obesidade",       "🔴"),
-        (c2, sobrepeso_pct,"Com Sobrepeso",        "🟡"),
-        (c3, normal_pct,   "Peso Normal",          "🟢"),
-        (c4, hist_pct,     "Hist. Familiar",       "🧬"),
+    c1, c2, c3, c4 = st.columns(4)
+    for col, val, label, icon, fmt in [
+        (c1, obesos_pct,    "Com Obesidade",  "🔴", "{:.0f}%"),
+        (c2, sobrepeso_pct, "Com Sobrepeso",  "🟡", "{:.0f}%"),
+        (c3, imc_medio,     "IMC Médio",      "📊", "{:.1f}"),
+        (c4, hist_pct,      "Hist. Familiar", "🧬", "{:.0f}%"),
     ]:
         with col:
             st.markdown(f"""
             <div class="metric-card">
                 <div style="font-size:1.5rem">{icon}</div>
-                <div class="metric-value">{val:.0f}%</div>
+                <div class="metric-value">{fmt.format(val)}</div>
                 <div class="metric-label">{label}</div>
             </div>
             """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Gráfico 1: distribuição por classe + gênero
+    # ── Linha 1: Distribuição por Gênero (barras verticais) + Boxplot de Peso
     col_a, col_b = st.columns(2, gap="large")
 
     with col_a:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("**Distribuição por Nível de Obesidade e Gênero**")
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = plt.subplots(figsize=(6, 4.2))
         fig.patch.set_facecolor("white")
         ax.set_facecolor("white")
-        order = ["Insufficient_Weight","Normal_Weight",
-                 "Overweight_Level_I","Overweight_Level_II",
-                 "Obesity_Type_I","Obesity_Type_II","Obesity_Type_III"]
-        pal = {"Male": "#2c1810", "Female": "#e91e8c"}
-        data_plot = df[df["Obesity"].isin(order)]
-        sns.countplot(data=data_plot, y="Obesity", hue="Gender",
-                      order=order, palette=pal, ax=ax, edgecolor="white")
-        ax.set_ylabel("")
-        ax.set_xlabel("Nº de Pacientes", fontsize=9)
-        yticklabels = [CLASSE_PT.get(t.get_text(), t.get_text()) for t in ax.get_yticklabels()]
-        ax.set_yticklabels(yticklabels, fontsize=8)
+        # Barras verticais agrupadas — hue=Gender, x=Obesity
+        pal_genero = {"Male": TEMA["escuro"], "Female": TEMA["claro"]}
+        data_plot = df[df["Obesity"].isin(order)].copy()
+        data_plot["Obesity_PT"] = data_plot["Obesity"].map(CLASSE_PT)
+        order_pt = [CLASSE_PT[o] for o in order]
+        sns.countplot(
+            data=data_plot, x="Obesity_PT", hue="Gender",
+            order=order_pt, palette=pal_genero, ax=ax, edgecolor="white", width=0.7
+        )
+        ax.set_xlabel("")
+        ax.set_ylabel("Nº de Pacientes", fontsize=9)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=35, ha="right", fontsize=7.5)
         ax.spines[["top","right"]].set_visible(False)
         ax.tick_params(labelsize=8)
-        ax.legend(title="Gênero", fontsize=8, title_fontsize=8)
+        handles, _ = ax.get_legend_handles_labels()
+        ax.legend(handles, ["Masculino", "Feminino"],
+                  title="Gênero", fontsize=8, title_fontsize=8)
+        ax.yaxis.grid(True, linestyle="--", alpha=0.35)
+        ax.set_axisbelow(True)
         plt.tight_layout()
         st.pyplot(fig); plt.close()
         st.markdown("</div>", unsafe_allow_html=True)
@@ -594,59 +619,67 @@ with tab2:
     with col_b:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("**Distribuição de Peso por Classe de Obesidade**")
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = plt.subplots(figsize=(6, 4.2))
         fig.patch.set_facecolor("white")
         ax.set_facecolor("white")
-        CORES_CLASSE = {
-            "Insufficient_Weight":"#1e88e5","Normal_Weight":"#43a047",
-            "Overweight_Level_I":"#fb8c00","Overweight_Level_II":"#f4511e",
-            "Obesity_Type_I":"#e53935","Obesity_Type_II":"#c62828","Obesity_Type_III":"#880e4f",
-        }
-        for classe in order:
+        for i, classe in enumerate(order):
             dados_c = df[df["Obesity"] == classe]["Weight"]
-            ax.boxplot(dados_c, positions=[order.index(classe)],
-                       patch_artist=True,
-                       boxprops=dict(facecolor=CORES_CLASSE.get(classe,"#888"), alpha=0.7),
-                       medianprops=dict(color="white", linewidth=2),
-                       whiskerprops=dict(color="#aaa"),
-                       capprops=dict(color="#aaa"),
-                       flierprops=dict(marker="o", markerfacecolor="#aaa", markersize=2, alpha=0.4),
-                       widths=0.5)
+            ax.boxplot(
+                dados_c,
+                positions=[i],
+                patch_artist=True,
+                boxprops=dict(facecolor=CORES_CLASSES_TEMA[i], alpha=0.85),
+                medianprops=dict(color="white", linewidth=2),
+                whiskerprops=dict(color="#aaa"),
+                capprops=dict(color="#aaa"),
+                flierprops=dict(marker="o", markerfacecolor="#bbb",
+                                markersize=2, alpha=0.4),
+                widths=0.55
+            )
         ax.set_xticks(range(len(order)))
-        ax.set_xticklabels([CLASSE_PT.get(c,c) for c in order],
+        ax.set_xticklabels([CLASSE_PT.get(c, c) for c in order],
                            rotation=35, ha="right", fontsize=7)
         ax.set_ylabel("Peso (kg)", fontsize=9)
         ax.spines[["top","right"]].set_visible(False)
+        ax.yaxis.grid(True, linestyle="--", alpha=0.35)
+        ax.set_axisbelow(True)
         plt.tight_layout()
         st.pyplot(fig); plt.close()
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # ── Gráfico 2: histórico familiar e atividade física
+    # ── Linha 2: Consumo de vegetais + Atividade física
     col_c, col_d = st.columns(2, gap="large")
 
     with col_c:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("**Histórico Familiar vs. Nível de Obesidade**")
-        fig, ax = plt.subplots(figsize=(6, 3.5))
+        st.markdown("**Consumo de Vegetais por Nível de Obesidade**")
+        fig, ax = plt.subplots(figsize=(6, 3.8))
         fig.patch.set_facecolor("white")
         ax.set_facecolor("white")
-        cross = pd.crosstab(df["Obesity"], df["family_history"], normalize="index") * 100
-        cross = cross.reindex(order)
-        cross.rename(index=CLASSE_PT, inplace=True)
-        cross[["yes","no"]].plot(kind="barh", ax=ax, color=["#2c1810","#c9a898"],
-                                  edgecolor="white", width=0.6)
-        ax.set_xlabel("% de Pacientes", fontsize=9)
-        ax.set_ylabel("")
-        ax.tick_params(labelsize=8)
+        fcvc_media = df.groupby("Obesity")["FCVC"].mean().reindex(order)
+        fcvc_media.index = [CLASSE_PT.get(i, i) for i in fcvc_media.index]
+        bars = ax.bar(
+            fcvc_media.index, fcvc_media.values,
+            color=CORES_CLASSES_TEMA, edgecolor="white", alpha=0.9, width=0.6
+        )
+        ax.axhline(fcvc_media.mean(), color=TEMA["acento"], linestyle="--",
+                   alpha=0.7, linewidth=1.2, label="Média geral")
+        for bar, val in zip(bars, fcvc_media.values):
+            ax.text(bar.get_x() + bar.get_width()/2, val + 0.01,
+                    f"{val:.2f}", ha="center", va="bottom", fontsize=8, color="#333")
+        ax.set_ylabel("Freq. Consumo de Vegetais (1–3)", fontsize=9)
+        ax.set_xticklabels(fcvc_media.index, rotation=35, ha="right", fontsize=7.5)
+        ax.set_ylim(0, fcvc_media.max() * 1.18)
         ax.spines[["top","right"]].set_visible(False)
-        ax.legend(["Com hist. familiar","Sem hist. familiar"],
-                  fontsize=8, loc="lower right")
+        ax.yaxis.grid(True, linestyle="--", alpha=0.35)
+        ax.set_axisbelow(True)
+        ax.legend(fontsize=8)
         plt.tight_layout()
         st.pyplot(fig); plt.close()
         st.markdown("""
         <p style="font-size:0.8rem; color:#64748b; margin-top:8px">
-        💡 <strong>Insight:</strong> Pacientes com obesidade mais severa têm histórico familiar predominante, 
-        sugerindo forte componente genético.
+        💡 <strong>Insight:</strong> Níveis mais severos de obesidade tendem a apresentar
+        menor consumo médio de vegetais, reforçando a importância de hábitos alimentares saudáveis.
         </p>
         """, unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
@@ -654,66 +687,32 @@ with tab2:
     with col_d:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("**Atividade Física Média por Classe**")
-        fig, ax = plt.subplots(figsize=(6, 3.5))
+        fig, ax = plt.subplots(figsize=(6, 3.8))
         fig.patch.set_facecolor("white")
         ax.set_facecolor("white")
         faf_media = df.groupby("Obesity")["FAF"].mean().reindex(order)
         faf_media.index = [CLASSE_PT.get(i, i) for i in faf_media.index]
-        cores_faf = ["#43a047" if v >= faf_media.mean() else "#e53935"
+        cores_faf = [TEMA["escuro"] if v >= faf_media.mean() else TEMA["suave"]
                      for v in faf_media.values]
         bars = ax.barh(faf_media.index, faf_media.values,
-                       color=cores_faf, edgecolor="white", alpha=0.85, height=0.55)
-        ax.axvline(faf_media.mean(), color="#888", linestyle="--",
-                   alpha=0.6, linewidth=1, label="Média geral")
+                       color=cores_faf, edgecolor="white", alpha=0.9, height=0.55)
+        ax.axvline(faf_media.mean(), color=TEMA["acento"], linestyle="--",
+                   alpha=0.7, linewidth=1.2, label="Média geral")
+        for bar, val in zip(bars, faf_media.values):
+            ax.text(val + 0.02, bar.get_y() + bar.get_height()/2,
+                    f"{val:.2f}", va="center", fontsize=8, color="#333")
         ax.set_xlabel("Freq. de Atividade Física (0–3)", fontsize=9)
         ax.tick_params(labelsize=8)
         ax.spines[["top","right"]].set_visible(False)
+        ax.xaxis.grid(True, linestyle="--", alpha=0.35)
+        ax.set_axisbelow(True)
         ax.legend(fontsize=8)
         plt.tight_layout()
         st.pyplot(fig); plt.close()
         st.markdown("""
         <p style="font-size:0.8rem; color:#64748b; margin-top:8px">
-        💡 <strong>Insight:</strong> Pacientes com obesidade severa praticam significativamente 
+        💡 <strong>Insight:</strong> Pacientes com obesidade severa praticam significativamente
         menos atividade física que a média da amostra.
         </p>
         """, unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
-
-    # ── Gráfico 3: importância das features
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("**🔑 Fatores Mais Determinantes para o Diagnóstico**")
-    feat_imp = art["feat_imp"].copy()
-    feat_imp["Feature_PT"] = feat_imp["Feature"].map({
-        "Weight":"Peso","Height":"Altura","Age":"Idade",
-        "Gender":"Gênero","FAF":"Ativ. Física","FCVC":"Consumo Vegetais",
-        "NCP":"Nº Refeições","CH2O":"Consumo Água","TUE":"Tempo em Tela",
-        "family_history":"Hist. Familiar","FAVC":"Alim. Calórico",
-        "CAEC":"Come Entre Refeições","CALC":"Álcool",
-        "SMOKE":"Fuma","SCC":"Monitora Calorias","MTRANS":"Transporte",
-    }).fillna(feat_imp["Feature"])
-
-    fig, ax = plt.subplots(figsize=(12, 4))
-    fig.patch.set_facecolor("white")
-    ax.set_facecolor("white")
-    top = feat_imp.head(10).iloc[::-1]
-    cores_feat = ["#2c1810" if i >= len(top)-3 else "#c9a898"
-                  for i in range(len(top))]
-    bars = ax.barh(top["Feature_PT"], top["Importância"],
-                   color=cores_feat, edgecolor="white", height=0.55, alpha=0.9)
-    for bar, val in zip(bars, top["Importância"]):
-        ax.text(val + 0.001, bar.get_y() + bar.get_height()/2,
-                f"{val:.3f}", va="center", fontsize=9, color="#333")
-    ax.set_xlabel("Importância Relativa", fontsize=10)
-    ax.spines[["top","right","bottom"]].set_visible(False)
-    ax.tick_params(labelsize=10)
-    ax.xaxis.grid(True, linestyle="--", alpha=0.3)
-    plt.tight_layout()
-    st.pyplot(fig); plt.close()
-    st.markdown("""
-    <p style="font-size:0.8rem; color:#64748b; margin-top:8px">
-    💡 <strong>Insight:</strong> Peso e altura dominam o poder preditivo (o modelo aprende algo próximo ao IMC). 
-    Fatores comportamentais como atividade física e alimentação aparecem como secundários — mas são os 
-    mais <em>acionáveis</em> para intervenção médica.
-    </p>
-    """, unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
