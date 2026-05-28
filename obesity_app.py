@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore")
 # CONFIGURAÇÃO DA PÁGINA
 # ══════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Sistema de Diagnóstico",
+    page_title="Sistema de Diagnóstico Hospitalar",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -81,6 +81,11 @@ html, body, [class*="css"] {
     padding: 24px 28px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
     margin-bottom: 20px;
+}
+/* Garante texto escuro dentro de cards brancos */
+.card, .card p, .card span, .card div,
+.card strong, .card b, .card label {
+    color: #1a1a1a !important;
 }
 
 /* ── Card header: gradiente marrom → marrom médio ── */
@@ -391,7 +396,7 @@ st.markdown(f"""
 <div class="card-blue" style="padding:32px 36px; margin-bottom:24px">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px">
         <div>
-            <h1 class="hero-title">Sistema de Diagnóstico</h1>
+            <h1 class="hero-title">Sistema de Diagnóstico Hospitalar</h1>
             <p class="hero-sub">Modelo de Machine Learning — <strong style="color:white">Gradient Boosting</strong></p>
         </div>
         <div style="display:flex; gap:24px; flex-wrap:wrap">
@@ -476,7 +481,7 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
 
-            st.markdown("**Probabilidade por Classe**")
+            st.markdown("**Probabilidade por Classe:**")
 
             prob_df = pd.DataFrame({
                 "Classe": [CLASSE_PT.get(c, c) for c in classes],
