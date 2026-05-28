@@ -585,7 +585,7 @@ with tab2:
 
     with col_a:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("**Distribuição por Nível de Obesidade e Gênero**")
+        st.markdown('<p style="font-weight:600;font-size:0.95rem;color:#2c1810;margin:0 0 8px 0">Distribuição por Nível de Obesidade e Gênero</p>', unsafe_allow_html=True)
         fig, ax = plt.subplots(figsize=(6, 4.2))
         fig.patch.set_facecolor("white")
         ax.set_facecolor("white")
@@ -614,7 +614,7 @@ with tab2:
 
     with col_b:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("**Gráfico Boxplot de Peso por Classe de Obesidade**")
+        st.markdown('<p style="font-weight:600;font-size:0.95rem;color:#2c1810;margin:0 0 8px 0">Gráfico Boxplot de Peso por Classe de Obesidade</p>', unsafe_allow_html=True)
         fig, ax = plt.subplots(figsize=(6, 4.2))
         fig.patch.set_facecolor("white")
         ax.set_facecolor("white")
@@ -647,35 +647,64 @@ with tab2:
 
     with col_c:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("**Consumo de Vegetais por Nível de Obesidade**")
+        st.markdown('<p style="font-weight:600;font-size:0.95rem;color:#2c1810;margin:0 0 8px 0">Consumo de Vegetais por Nível de Obesidade</p>', unsafe_allow_html=True)
         fig, ax = plt.subplots(figsize=(6, 3.8))
         fig.patch.set_facecolor("white")
         ax.set_facecolor("white")
-        fcvc_media = df.groupby("Obesity")["FCVC"].mean().reindex(order)
-        fcvc_media.index = [CLASSE_PT.get(i, i) for i in fcvc_media.index]
-        bars = ax.bar(
-            fcvc_media.index, fcvc_media.values,
-            color=CORES_CLASSES_TEMA, edgecolor="white", alpha=0.9, width=0.6
+
+        # Dicionário FCVC: 1=Raramente, 2=Às vezes, 3=Sempre (arredonda decimais)
+        FCVC_MAP = {1: "Raramente", 2: "Às vezes", 3: "Sempre"}
+        df_fcvc = df.copy()
+        df_fcvc["FCVC_cat"] = df_fcvc["FCVC"].round().astype(int).clip(1, 3).map(FCVC_MAP)
+
+        # Proporção de cada categoria por nível de obesidade
+        fcvc_counts = (
+            df_fcvc[df_fcvc["Obesity"].isin(order)]
+            .groupby(["Obesity", "FCVC_cat"])
+            .size()
+            .unstack(fill_value=0)
+            .reindex(order)
         )
-        ax.axhline(fcvc_media.mean(), color=TEMA["acento"], linestyle="--",
-                   alpha=0.7, linewidth=1.2, label="Média geral")
-        for bar, val in zip(bars, fcvc_media.values):
-            ax.text(bar.get_x() + bar.get_width()/2, val + 0.01,
-                    f"{val:.2f}", ha="center", va="bottom", fontsize=8, color="#333")
-        ax.set_ylabel("Freq. Consumo de Vegetais (1–3)", fontsize=9)
-        ax.set_xticklabels(fcvc_media.index, rotation=35, ha="right", fontsize=7.5)
-        ax.set_ylim(0, fcvc_media.max() * 1.18)
-        ax.spines[["top","right"]].set_visible(False)
+        for cat in ["Raramente", "Às vezes", "Sempre"]:
+            if cat not in fcvc_counts.columns:
+                fcvc_counts[cat] = 0
+        fcvc_counts = fcvc_counts[["Raramente", "Às vezes", "Sempre"]]
+        fcvc_pct = fcvc_counts.div(fcvc_counts.sum(axis=1), axis=0) * 100
+        fcvc_pct.index = [CLASSE_PT.get(i, i) for i in fcvc_pct.index]
+
+        cores_fcvc = {
+            "Raramente": TEMA["suave"],
+            "Às vezes":  TEMA["claro"],
+            "Sempre":    TEMA["escuro"],
+        }
+        x = np.arange(len(fcvc_pct))
+        bottom = np.zeros(len(fcvc_pct))
+        for cat, cor in cores_fcvc.items():
+            vals = fcvc_pct[cat].values
+            ax.bar(x, vals, bottom=bottom, label=cat,
+                   color=cor, edgecolor="white", alpha=0.9, width=0.6)
+            for xi, (v, b) in enumerate(zip(vals, bottom)):
+                if v > 6:
+                    ax.text(xi, b + v / 2, f"{v:.0f}%",
+                            ha="center", va="center", fontsize=7,
+                            color="white", fontweight="bold")
+            bottom += vals
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(fcvc_pct.index, rotation=35, ha="right", fontsize=7.5)
+        ax.set_ylabel("Proporção (%)", fontsize=9)
+        ax.set_ylim(0, 105)
+        ax.spines[["top", "right"]].set_visible(False)
         ax.yaxis.grid(True, linestyle="--", alpha=0.35)
         ax.set_axisbelow(True)
-        ax.legend(fontsize=8)
+        ax.legend(title="Frequência", fontsize=8, title_fontsize=8)
         plt.tight_layout()
         st.pyplot(fig); plt.close()
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col_d:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("**Atividade Física Média por Classe**")
+        st.markdown('<p style="font-weight:600;font-size:0.95rem;color:#2c1810;margin:0 0 8px 0">Atividade Física Média por Classe</p>', unsafe_allow_html=True)
         fig, ax = plt.subplots(figsize=(6, 3.8))
         fig.patch.set_facecolor("white")
         ax.set_facecolor("white")
