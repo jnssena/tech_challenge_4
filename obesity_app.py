@@ -443,8 +443,7 @@ with tab1:
         with col1:
             st.markdown(f"""
             <div class="card {css_cls}" style="text-align:center; padding:36px">
-                <div style="font-size:3.5rem; margin-bottom:8px">{emoji}</div>
-                <div style="font-size:0.75rem; letter-spacing:0.12em; color:#888; margin-bottom:6px">Diagnóstico Preditivo</div>
+                <div style="font-size:0.75rem; letter-spacing:0.12em; color:#888; margin-bottom:6px">Diagnóstico:</div>
                 <div style="font-family:'Inter',sans-serif; font-size:2rem; font-weight:600; color:#2c1810; line-height:1.2">{pred_pt}</div>
                 <div style="font-size:0.85rem; color:#555; margin-top:8px">Confiança do modelo: <strong>{confianca:.1f}%</strong></div>
             </div>
@@ -457,6 +456,7 @@ with tab1:
                 "Sobrepeso"      if IMC < 30   else
                 "Obesidade"
             )
+
             st.markdown(f"""
             <div class="card" style="display:flex; justify-content:space-around; align-items:center; padding:20px 28px">
                 <div style="text-align:center">
@@ -476,9 +476,7 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
 
-        with col2:
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.markdown("**📊 Probabilidade por classe**")
+            st.markdown("**Probabilidade por Classe**")
 
             prob_df = pd.DataFrame({
                 "Classe": [CLASSE_PT.get(c, c) for c in classes],
