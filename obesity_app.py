@@ -213,20 +213,6 @@ def treinar_modelo(df_hash):
     cm  = confusion_matrix(y_test, y_pred)
     report = classification_report(y_test, y_pred, target_names=le_target.classes_, output_dict=True)
 
-    # Importância das features (Random Forest / GB)
-    estimador = modelo_final.named_steps["modelo"]
-    if hasattr(estimador, "feature_importances_"):
-        feat_imp = pd.DataFrame({
-            "Feature": X.columns,
-            "Importância": estimador.feature_importances_
-        }).sort_values("Importância", ascending=False)
-    else:
-        coefs = np.abs(estimador.coef_).mean(axis=0)
-        feat_imp = pd.DataFrame({
-            "Feature": X.columns,
-            "Importância": coefs
-        }).sort_values("Importância", ascending=False)
-
     return {
         "modelo": modelo_final,
         "encoders": encoders,
@@ -237,14 +223,12 @@ def treinar_modelo(df_hash):
         "f1": f1,
         "cm": cm,
         "report": report,
-        "feat_imp": feat_imp,
     }
 
 
 # Carregamento dos dados e do modelo
-with st.spinner("🔄 Carregando dados e treinando o modelo..."):
-    df = carregar_dados()
-    art = treinar_modelo(hash(df.shape[0]))
+df = carregar_dados()
+art = treinar_modelo(hash(df.shape[0]))
 
 modelo        = art["modelo"]
 encoders      = art["encoders"]
@@ -328,13 +312,6 @@ def classe_css(nome):
     if "overweight" in n: return "result-overweight"
     return "result-obese"
 
-def emoji_classe(nome):
-    n = nome.lower()
-    if "insufficient" in n: return "🔵"
-    if "normal"       in n: return "🟢"
-    if "overweight"   in n: return "🟡"
-    return "🔴"
-
 CLASSE_PT = {
     "Insufficient_Weight": "Abaixo do Peso", "Normal_Weight":"Peso Normal", "Overweight_Level_I":"Sobrepeso Grau I", "Overweight_Level_II":"Sobrepeso Grau II",
     "Obesity_Type_I":"Obesidade Tipo I", "Obesity_Type_II":"Obesidade Tipo II", "Obesity_Type_III":"Obesidade Tipo III",
@@ -383,7 +360,6 @@ with tab1:
 
         pred_pt  = CLASSE_PT.get(pred_nome, pred_nome)
         css_cls  = classe_css(pred_nome)
-        emoji    = emoji_classe(pred_nome)
         confianca= probs.max() * 100
 
         col1, col2 = st.columns([1, 1], gap="large")
