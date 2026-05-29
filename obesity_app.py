@@ -19,18 +19,15 @@ from sklearn.metrics import (
 import warnings
 warnings.filterwarnings("ignore")
 
-# ══════════════════════════════════════════════════════
-# CONFIGURAÇÃO DA PÁGINA
-# ══════════════════════════════════════════════════════
+# Página
 st.set_page_config(
     page_title="Sistema de Diagnóstico Hospitalar",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ══════════════════════════════════════════════════════
-# CSS CUSTOMIZADO — visual médico clean e profissional
-# ══════════════════════════════════════════════════════
+# Estrutura da pagina
+# Cards e Side bar de ambas as abas
 st.markdown("""
 <style>
 
@@ -38,19 +35,13 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif !important;
-}
-.material-icons {
-    font-family: 'Material Icons' !important;
-}
+html, body, [class*="css"] {font-family: 'Inter', sans-serif !important;}
+.material-icons {font-family: 'Material Icons' !important;}
 
-/* ── Fundo geral: cinza muito suave ── */
-.stApp {
-    background: #f2f2f2;
-}
+/* Fundo cinza */
+.stApp {background: #f2f2f2;}
 
-/* ── Sidebar: tom marrom escuro #2c1810 ── */
+/* Sidebar marrom #2c1810 */
 [data-testid="stSidebar"] {
     background: #2c1810 !important;
     border-right: 1px solid #3d2318;
@@ -74,7 +65,7 @@ html, body, [class*="css"] {
     font-family: 'Inter', sans-serif !important;
 }
 
-/* ── Cards brancos ── */
+/* Cards brancos */
 .card {
     background: white;
     border-radius: 16px;
@@ -83,7 +74,7 @@ html, body, [class*="css"] {
     margin-bottom: 20px;
 }
 
-/* ── Card header: gradiente marrom → marrom médio ── */
+/* Card Central (Capa da Pagina) */
 .card-blue {
     background: linear-gradient(135deg, #2c1810 0%, #5a3020 100%);
     color: white;
@@ -95,13 +86,13 @@ html, body, [class*="css"] {
     color: white !important;
 }
 
-/* ── Cards de resultado do diagnóstico ── */
+/* Card resultado (Cores diferentes para cada resultado) */
 .result-normal    { background: #e8f5e9; border: 2px solid #4caf50; }
 .result-overweight{ background: #fff8e1; border: 2px solid #ffb300; }
 .result-obese     { background: #fce4ec; border: 2px solid #e91e63; }
 .result-insuf     { background: #e3f2fd; border: 2px solid #1e88e5; }
 
-/* ── KPI cards do painel analítico ── */
+/* Card KPIs (IMC, Classificacao e Peso) */
 .metric-card {
     background: white;
     border-radius: 12px;
@@ -124,7 +115,7 @@ html, body, [class*="css"] {
     margin-top: 6px;
 }
 
-/* ── Título principal do header ── */
+/* Título principal do header */
 .hero-title {
     font-family: 'Inter', sans-serif;
     font-size: 2.2rem;
@@ -139,7 +130,7 @@ html, body, [class*="css"] {
     margin-top: 6px;
 }
 
-/* ── Abas: cor ativa alinhada ao tema marrom ── */
+/* Aba do stream lit (Diagnostico e Painel Analitico) */
 .stTabs [data-baseweb="tab"] {
     font-weight: 500;
     color: #64748b;
@@ -150,7 +141,7 @@ html, body, [class*="css"] {
     border-bottom: 2px solid #2c1810 !important;
 }
 
-/* ── Botão: marrom coerente com a sidebar ── */
+/* Botão de "Realizar Diagnostico" da Sidebar */
 .stButton > button {
     background: linear-gradient(135deg, #2c1810, #5a3020) !important;
     color: white !important;
@@ -176,11 +167,8 @@ html, body, [class*="css"] {
 </style>
 """, unsafe_allow_html=True)
 
-
-# ══════════════════════════════════════════════════════
-# FUNÇÕES DE CACHE — treina o modelo só uma vez
-# ══════════════════════════════════════════════════════
-
+# Treinamento do modelo escolhido no Notebook
+# A função cache permite que ele seja treinado apenas uma unica vez
 @st.cache_data(show_spinner=False)
 def carregar_dados():
     URL = (
@@ -211,10 +199,7 @@ def treinar_modelo(df_hash):
     X = df_modelo.drop(columns=[COLUNA_ALVO])
     y = df_modelo[COLUNA_ALVO]
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
-
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
     modelo_final = Pipeline([
         ("scaler", StandardScaler()),
@@ -226,9 +211,7 @@ def treinar_modelo(df_hash):
     acc = accuracy_score(y_test, y_pred)
     f1  = f1_score(y_test, y_pred, average="weighted")
     cm  = confusion_matrix(y_test, y_pred)
-    report = classification_report(y_test, y_pred,
-                                   target_names=le_target.classes_,
-                                   output_dict=True)
+    report = classification_report(y_test, y_pred, target_names=le_target.classes_, output_dict=True)
 
     # Importância das features (Random Forest / GB)
     estimador = modelo_final.named_steps["modelo"]
@@ -258,9 +241,7 @@ def treinar_modelo(df_hash):
     }
 
 
-# ══════════════════════════════════════════════════════
-# CARREGAR DADOS E MODELO
-# ══════════════════════════════════════════════════════
+# Carregamento dos dados e do modelo
 with st.spinner("🔄 Carregando dados e treinando o modelo..."):
     df = carregar_dados()
     art = treinar_modelo(hash(df.shape[0]))
@@ -271,17 +252,14 @@ le_target     = art["le_target"]
 feat_cat      = art["colunas_features_cat"]
 X_cols        = art["X_columns"]
 
-
-# ══════════════════════════════════════════════════════
-# SIDEBAR — formulário de entrada do paciente
-# ══════════════════════════════════════════════════════
+# Configurações dos botões que servirão como input da Sidebar 
 with st.sidebar:
 
     st.markdown("### Dados do Paciente")
 
     with st.expander("Dados Físicos", expanded=True):
-        genero_pt = st.selectbox("Gênero", ["Masculino", "Feminino"])
-        genero = {"Masculino": "Male", "Feminino": "Female"}[genero_pt]
+        genero_pt = st.selectbox("Gênero", ["Masculino", "Feminino"]) 
+        genero = {"Masculino": "Male", "Feminino": "Female"}[genero_pt] # Tradução das palavras que no df original estão em ingles
 
         idade  = st.slider("Idade", 10, 80, 30)
         altura = st.slider("Altura (m)", 1.40, 2.10, 1.70, 0.01)
@@ -289,79 +267,65 @@ with st.sidebar:
 
     with st.expander("Hábitos Alimentares", expanded=True):
         hist_fam_pt = st.selectbox("Histórico familiar de sobrepeso", ["Sim", "Não"])
-        hist_fam = {"Sim": "yes", "Não": "no"}[hist_fam_pt]
+        hist_fam = {"Sim": "yes", "Não": "no"}[hist_fam_pt] # Tradução das palavras que no df original estão em ingles
 
         favc_pt = st.selectbox("Consome alimentos calóricos frequentemente?", ["Sim", "Não"])
-        favc = {"Sim": "yes", "Não": "no"}[favc_pt]
+        favc = {"Sim": "yes", "Não": "no"}[favc_pt] # Tradução das palavras que no df original estão em ingles
 
         fcvc = st.slider("Freq. consumo de vegetais (1=baixo, 3=alto)", 1.0, 3.0, 2.0, 0.5)
         ncp  = st.slider("Nº de refeições principais por dia", 1.0, 4.0, 3.0, 0.5)
 
-        caec_pt = st.selectbox("Come entre as refeições?",
-                               ["Não", "Às vezes", "Frequentemente", "Sempre"])
-        caec = {"Não": "no", "Às vezes": "Sometimes",
-                "Frequentemente": "Frequently", "Sempre": "Always"}[caec_pt]
+        caec_pt = st.selectbox("Come entre as refeições?", ["Não", "Às vezes", "Frequentemente", "Sempre"])
+        caec = {"Não": "no", "Às vezes": "Sometimes", "Frequentemente": "Frequently", "Sempre": "Always"}[caec_pt] # Tradução das palavras que no df original estão em ingles
 
         ch2o = st.slider("Litros de água por dia (1–3)", 1.0, 3.0, 2.0, 0.5)
 
         scc_pt = st.selectbox("Monitora calorias consumidas?", ["Não", "Sim"])
-        scc = {"Sim": "yes", "Não": "no"}[scc_pt]
+        scc = {"Sim": "yes", "Não": "no"}[scc_pt] #Tradução das palavras que no df original estão em ingles
 
     with st.expander("Estilo de Vida", expanded=True):
         smoke_pt = st.selectbox("Fuma?", ["Não", "Sim"])
-        smoke = {"Sim": "yes", "Não": "no"}[smoke_pt]
+        smoke = {"Sim": "yes", "Não": "no"}[smoke_pt] #Tradução das palavras que no df original estão em ingles
 
         faf = st.slider("Freq. atividade física (0=nunca, 3=sempre)", 0.0, 3.0, 1.0, 0.5)
         tue = st.slider("Horas/dia em telas (0–2)", 0.0, 2.0, 1.0, 0.5)
 
-        calc_pt = st.selectbox("Freq. consumo de álcool",
-                               ["Não consome", "Às vezes", "Frequentemente", "Sempre"])
-        calc = {"Não consome": "no", "Às vezes": "Sometimes",
-                "Frequentemente": "Frequently", "Sempre": "Always"}[calc_pt]
+        calc_pt = st.selectbox("Freq. consumo de álcool", ["Não consome", "Às vezes", "Frequentemente", "Sempre"])
+        calc = {"Não consome": "no", "Às vezes": "Sometimes", "Frequentemente": "Frequently", "Sempre": "Always"}[calc_pt] #Tradução das palavras que no df original estão em ingles
 
-        mtrans_pt = st.selectbox("Principal meio de transporte",
-                                 ["Transporte Público", "A pé", "Automóvel",
-                                  "Moto", "Bicicleta"])
-        mtrans = {
-            "Transporte Público": "Public_Transportation",
-            "A pé":               "Walking",
-            "Automóvel":          "Automobile",
-            "Moto":               "Motorbike",
-            "Bicicleta":          "Bike",
-        }[mtrans_pt]
+        mtrans_pt = st.selectbox("Principal meio de transporte", ["Transporte Público", "A pé", "Automóvel", "Moto", "Bicicleta"])
+        mtrans = {"Transporte Público":"Public_Transportation", "A pé":"Walking", "Automóvel":"Automobile", "Moto":"Motorbike", "Bicicleta":"Bike",}[mtrans_pt] #Tradução das palavras que no df original estão em ingles
 
     st.markdown("<br>", unsafe_allow_html=True)
     predict_btn = st.button("Relizar Diagnóstico")
 
-
-# ══════════════════════════════════════════════════════
-# HELPER — predição
-# ══════════════════════════════════════════════════════
+# Modelo de predição
 def fazer_predicao():
     dados = {
-        "Gender": genero, "Age": float(idade), "Height": altura,
-        "Weight": peso, "family_history": hist_fam, "FAVC": favc,
-        "FCVC": fcvc, "NCP": ncp, "CAEC": caec, "SMOKE": smoke,
-        "CH2O": ch2o, "SCC": scc, "FAF": faf, "TUE": tue,
-        "CALC": calc, "MTRANS": mtrans,
+        "Gender": genero, "Age": float(idade), "Height": altura, "Weight": peso, "family_history": hist_fam, "FAVC": favc, "FCVC": fcvc, "NCP": ncp, "CAEC": caec, "SMOKE": smoke,
+        "CH2O": ch2o, "SCC": scc, "FAF": faf, "TUE": tue, "CALC": calc, "MTRANS": mtrans,
     }
+
     pac = pd.DataFrame([dados])
+
     for col in feat_cat:
         le = encoders[col]
         val = pac[col].astype(str)
         val_safe = val.map(lambda v: v if v in le.classes_ else le.classes_[0])
         pac[col] = le.transform(val_safe)
+
     pac = pac[X_cols]
     pred_num  = modelo.predict(pac)[0]
     pred_nome = le_target.inverse_transform([pred_num])[0]
     probs     = modelo.predict_proba(pac)[0]
+
     return pred_nome, probs, le_target.classes_
 
 def classe_css(nome):
     n = nome.lower()
     if "insufficient" in n: return "result-insuf"
-    if "normal"       in n: return "result-normal"
-    if "overweight"   in n: return "result-overweight"
+    if "normal" in n: return "result-normal"
+    if "overweight" in n: return "result-overweight"
     return "result-obese"
 
 def emoji_classe(nome):
@@ -372,21 +336,13 @@ def emoji_classe(nome):
     return "🔴"
 
 CLASSE_PT = {
-    "Insufficient_Weight": "Abaixo do Peso",
-    "Normal_Weight":       "Peso Normal",
-    "Overweight_Level_I":  "Sobrepeso Grau I",
-    "Overweight_Level_II": "Sobrepeso Grau II",
-    "Obesity_Type_I":      "Obesidade Tipo I",
-    "Obesity_Type_II":     "Obesidade Tipo II",
-    "Obesity_Type_III":    "Obesidade Tipo III",
+    "Insufficient_Weight": "Abaixo do Peso", "Normal_Weight":"Peso Normal", "Overweight_Level_I":"Sobrepeso Grau I", "Overweight_Level_II":"Sobrepeso Grau II",
+    "Obesity_Type_I":"Obesidade Tipo I", "Obesity_Type_II":"Obesidade Tipo II", "Obesity_Type_III":"Obesidade Tipo III",
 }
 
 IMC = round(peso / (altura ** 2), 1)
 
 
-# ══════════════════════════════════════════════════════
-# HEADER HERO
-# ══════════════════════════════════════════════════════
 st.markdown(f"""
 <div class="card-blue" style="padding:32px 36px; margin-bottom:24px">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px">
@@ -409,18 +365,10 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════
-# ABAS PRINCIPAIS
-# ══════════════════════════════════════════════════════
-tab1, tab2 = st.tabs([
-    "Diagnóstico",
-    "Painel Analítico",
-])
+# Nomes das abas
+tab1, tab2 = st.tabs(["Diagnóstico","Painel Analítico",])
 
-
-# ══════════════════════════════════════════════════════
-# ABA 1 — DIAGNÓSTICO
-# ══════════════════════════════════════════════════════
+# Aba Diagnostico
 with tab1:
     if predict_btn or "pred_nome" in st.session_state:
         if predict_btn:
@@ -441,6 +389,7 @@ with tab1:
         col1, col2 = st.columns([1, 1], gap="large")
 
         with col1:
+            # Card 1
             st.markdown(f"""
             <div class="card {css_cls}" style="text-align:center; padding:36px">
                 <div style="font-size:0.75rem; letter-spacing:0.12em; color:#888; margin-bottom:6px">Diagnóstico:</div>
@@ -457,6 +406,7 @@ with tab1:
                 "Obesidade"
             )
 
+            # Card 2
             st.markdown(f"""
             <div class="card" style="display:flex; justify-content:space-around; align-items:center; padding:20px 28px">
                 <div style="text-align:center">
@@ -476,8 +426,6 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
 
-            st.markdown("**Probabilidade por Classe:**")
-
             prob_df = pd.DataFrame({
                 "Classe": [CLASSE_PT.get(c, c) for c in classes],
                 "Prob":   probs * 100
@@ -492,10 +440,9 @@ with tab1:
                 "Obesidade Tipo II": "#c62828",
                 "Obesidade Tipo III":"#880e4f",
             }
-            cores_barras = [
-                COR_MAP.get(c, "#64748b") for c in prob_df["Classe"]
-            ]
+            cores_barras = [COR_MAP.get(c, "#64748b") for c in prob_df["Classe"]]
 
+            # Grafico de barras
             fig, ax = plt.subplots(figsize=(6, 4))
             fig.patch.set_facecolor("white")
             ax.set_facecolor("white")
@@ -518,6 +465,7 @@ with tab1:
             st.markdown("</div>", unsafe_allow_html=True)
 
     else:
+        # Card pedindo para Preencher sidebar
         st.markdown("""
         <div class="card" style="text-align:center; padding:60px 40px; border: 2px dashed #cbd5e1">
             <div style="color:#64748b; font-size:0.95rem">
@@ -527,13 +475,9 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
 
-
-# ══════════════════════════════════════════════════════
-# ABA 2 — PAINEL ANALÍTICO
-# ══════════════════════════════════════════════════════
+# Aba Perfil Analitico
 with tab2:
-
-    # Paleta de marrons coerente com o tema #2c1810
+    # Paleta de cores gradiente do marrom principal
     TEMA = {
         "escuro":    "#2c1810",
         "medio":     "#5a3020",
@@ -543,26 +487,23 @@ with tab2:
         "acento":    "#a0522d",
     }
 
-    # Gradiente de 7 tons do mais claro ao mais escuro para as classes de obesidade
     CORES_CLASSES_TEMA = [
-        "#f0e6df",  # Abaixo do Peso   — tom mais claro
+        "#f0e6df",  # Abaixo do Peso
         "#c9a898",  # Peso Normal
         "#a0805c",  # Sobrepeso I
         "#8b5e3c",  # Sobrepeso II
         "#5a3020",  # Obesidade I
         "#3d1e10",  # Obesidade II
-        "#2c1810",  # Obesidade III    — tom mais escuro
+        "#2c1810",  # Obesidade III
     ]
 
-    order = ["Insufficient_Weight","Normal_Weight",
-             "Overweight_Level_I","Overweight_Level_II",
-             "Obesity_Type_I","Obesity_Type_II","Obesity_Type_III"]
+    order = ["Insufficient_Weight", "Normal_Weight", "Overweight_Level_I", "Overweight_Level_II", "Obesity_Type_I", "Obesity_Type_II", "Obesity_Type_III"]
 
-    # ── KPIs: Obesidade | Sobrepeso | IMC médio | Hist. Familiar
-    obesos_pct    = df["Obesity"].str.contains("Obesity").mean() * 100
-    sobrepeso_pct = df["Obesity"].str.contains("Overweight").mean() * 100
-    imc_medio     = (df["Weight"] / (df["Height"] ** 2)).mean()
-    hist_pct      = (df["family_history"] == "yes").mean() * 100
+    # Cards indicadores
+    obesos_pct    = df["Obesity"].str.contains("Obesity").mean() * 100 # Obesidade
+    sobrepeso_pct = df["Obesity"].str.contains("Overweight").mean() * 100 # Sobrepeso
+    imc_medio     = (df["Weight"] / (df["Height"] ** 2)).mean() # IMC medio
+    hist_pct      = (df["family_history"] == "yes").mean() * 100 # Historico Familiar
 
     c1, c2, c3, c4 = st.columns(4)
     for col, val, label, fmt in [
@@ -580,16 +521,16 @@ with tab2:
             """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
-    # ── Linha 1: Distribuição por Gênero (barras verticais) + Boxplot de Peso
+    # Linha 1 com duas colunas (dois graficos)
     col_a, col_b = st.columns(2, gap="large")
 
+    # Grafico de barras verticais obesidade x genero
     with col_a:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<p style="font-weight:600;font-size:0.95rem;color:#2c1810;margin:0 0 8px 0">Distribuição por Nível de Obesidade e Gênero</p>', unsafe_allow_html=True)
         fig, ax = plt.subplots(figsize=(6, 4.2))
         fig.patch.set_facecolor("white")
         ax.set_facecolor("white")
-        # Barras verticais agrupadas — hue=Gender, x=Obesity
         pal_genero = {"Male": TEMA["escuro"], "Female": TEMA["claro"]}
         data_plot = df[df["Obesity"].isin(order)].copy()
         data_plot["Obesity_PT"] = data_plot["Obesity"].map(CLASSE_PT)
@@ -604,14 +545,14 @@ with tab2:
         ax.spines[["top","right"]].set_visible(False)
         ax.tick_params(labelsize=8)
         handles, _ = ax.get_legend_handles_labels()
-        ax.legend(handles, ["Masculino", "Feminino"],
-                  title="Gênero", fontsize=8, title_fontsize=8)
+        ax.legend(handles, ["Masculino", "Feminino"], title="Gênero", fontsize=8, title_fontsize=8)
         ax.yaxis.grid(True, linestyle="--", alpha=0.35)
         ax.set_axisbelow(True)
         plt.tight_layout()
         st.pyplot(fig); plt.close()
         st.markdown("</div>", unsafe_allow_html=True)
 
+    # Grafico boxplot peso por classe de obesidade
     with col_b:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<p style="font-weight:600;font-size:0.95rem;color:#2c1810;margin:0 0 8px 0">Gráfico Boxplot de Peso por Classe de Obesidade</p>', unsafe_allow_html=True)
@@ -628,13 +569,11 @@ with tab2:
                 medianprops=dict(color="white", linewidth=2),
                 whiskerprops=dict(color="#aaa"),
                 capprops=dict(color="#aaa"),
-                flierprops=dict(marker="o", markerfacecolor="#bbb",
-                                markersize=2, alpha=0.4),
+                flierprops=dict(marker="o", markerfacecolor="#bbb", markersize=2, alpha=0.4),
                 widths=0.55
             )
         ax.set_xticks(range(len(order)))
-        ax.set_xticklabels([CLASSE_PT.get(c, c) for c in order],
-                           rotation=35, ha="right", fontsize=7)
+        ax.set_xticklabels([CLASSE_PT.get(c, c) for c in order], rotation=35, ha="right", fontsize=7)
         ax.set_ylabel("Peso (kg)", fontsize=9)
         ax.spines[["top","right"]].set_visible(False)
         ax.yaxis.grid(True, linestyle="--", alpha=0.35)
@@ -642,9 +581,10 @@ with tab2:
         plt.tight_layout()
         st.pyplot(fig); plt.close()
 
-    # ── Linha 2: Consumo de vegetais + Atividade física
+    # Linha 2 com duas colunas (dois graficos)
     col_c, col_d = st.columns(2, gap="large")
 
+    # Grafico de barras verticais vegetais x obesidade
     with col_c:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<p style="font-weight:600;font-size:0.95rem;color:#2c1810;margin:0 0 8px 0">Consumo de Vegetais por Nível de Obesidade</p>', unsafe_allow_html=True)
@@ -652,12 +592,11 @@ with tab2:
         fig.patch.set_facecolor("white")
         ax.set_facecolor("white")
 
-        # Dicionário FCVC: 1=Raramente, 2=Às vezes, 3=Sempre (arredonda decimais)
         FCVC_MAP = {1: "Raramente", 2: "Às vezes", 3: "Sempre"}
         df_fcvc = df.copy()
         df_fcvc["FCVC_cat"] = df_fcvc["FCVC"].round().astype(int).clip(1, 3).map(FCVC_MAP)
 
-        # Proporção de cada categoria por nível de obesidade
+        # Proporção de cada categoria em cada barra
         fcvc_counts = (
             df_fcvc[df_fcvc["Obesity"].isin(order)]
             .groupby(["Obesity", "FCVC_cat"])
@@ -681,13 +620,10 @@ with tab2:
         bottom = np.zeros(len(fcvc_pct))
         for cat, cor in cores_fcvc.items():
             vals = fcvc_pct[cat].values
-            ax.bar(x, vals, bottom=bottom, label=cat,
-                   color=cor, edgecolor="white", alpha=0.9, width=0.6)
+            ax.bar(x, vals, bottom=bottom, label=cat, color=cor, edgecolor="white", alpha=0.9, width=0.6)
             for xi, (v, b) in enumerate(zip(vals, bottom)):
                 if v > 6:
-                    ax.text(xi, b + v / 2, f"{v:.0f}%",
-                            ha="center", va="center", fontsize=7,
-                            color="white", fontweight="bold")
+                    ax.text(xi, b + v / 2, f"{v:.0f}%", ha="center", va="center", fontsize=7, color="white", fontweight="bold")
             bottom += vals
 
         ax.set_xticks(x)
@@ -702,6 +638,7 @@ with tab2:
         st.pyplot(fig); plt.close()
         st.markdown("</div>", unsafe_allow_html=True)
 
+    # Grafico de barras horizontais atividade fisica x obesidade
     with col_d:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<p style="font-weight:600;font-size:0.95rem;color:#2c1810;margin:0 0 8px 0">Atividade Física Média por Classe</p>', unsafe_allow_html=True)
@@ -712,10 +649,8 @@ with tab2:
         faf_media.index = [CLASSE_PT.get(i, i) for i in faf_media.index]
         cores_faf = [TEMA["escuro"] if v >= faf_media.mean() else TEMA["suave"]
                      for v in faf_media.values]
-        bars = ax.barh(faf_media.index, faf_media.values,
-                       color=cores_faf, edgecolor="white", alpha=0.9, height=0.55)
-        ax.axvline(faf_media.mean(), color=TEMA["acento"], linestyle="--",
-                   alpha=0.7, linewidth=1.2, label="Média geral")
+        bars = ax.barh(faf_media.index, faf_media.values, color=cores_faf, edgecolor="white", alpha=0.9, height=0.55)
+        ax.axvline(faf_media.mean(), color=TEMA["acento"], linestyle="--", alpha=0.7, linewidth=1.2, label="Média geral")
         for bar, val in zip(bars, faf_media.values):
             ax.text(val + 0.02, bar.get_y() + bar.get_height()/2,
                     f"{val:.2f}", va="center", fontsize=8, color="#333")
