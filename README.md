@@ -1,4 +1,4 @@
-# Tech Challenge Fase 4 — Pós Tech Data Analytics - FIAP
+# Tech Challenge Fase 4 - Pós Tech Data Analytics - FIAP
 ## Objetivo do Projeto
 Desenvolver um modelo de Machine Learning para auxiliar um hospital a prever o nível de obesidade de um paciente com base em seus hábitos de vida e características físicas. O sistema foi deployado via Streamlit como uma aplicação preditiva hospitalar, contendo tanto um módulo de diagnóstico individual quanto um painel analítico com os principais insights sobre os dados.
 
@@ -12,10 +12,10 @@ Desenvolver um modelo de Machine Learning para auxiliar um hospital a prever o n
 
 ## Metodologia
 ### 1. Coleta dos Dados:
-Os dados foram obtidos a partir do dataset `Obesity.csv`, disponível no próprio repositório do GitHub, contendo características físicas, hábitos alimentares e estilo de vida de pacientes. O dicionário dos dados está contido no arquivo 'dicionario_obesity_fiap_tc4.pdf'
+Os dados foram obtidos a partir do dataset Obesity.csv, disponível no próprio repositório do GitHub, contendo características físicas, hábitos alimentares e estilo de vida de pacientes. O dicionário dos dados está contido no arquivo dicionario_obesity_fiap_tc4.pdf
 
 ### 2. Análise Exploratória:
-Foram realizadas análises de distribuição da variável alvo, estatísticas descritivas das variáveis numéricas e geração de um gráfico de correlação entre as features. As variáveis categóricas foram codificadas via Label Encoding, com encoders individuais por coluna para permitir a inversão da transformação durante a predição. A variável alvo `Obesity` recebeu um encoder separado.
+Foram realizadas análises de distribuição da variável alvo, estatísticas descritivas das variáveis numéricas e geração de um gráfico de correlação entre as features. As variáveis categóricas foram codificadas via Label Encoding, com encoders individuais por coluna para permitir a inversão da transformação durante a predição. A variável alvo Obesity recebeu um encoder separado.
 
 O Gradient Boosting foi selecionado como modelo final, atingindo 96,6% de assertividade.
 
