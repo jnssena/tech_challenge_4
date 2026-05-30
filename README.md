@@ -1,26 +1,34 @@
-# Tech Challenge 4
+# Tech Challenge Fase 4 — Pós Tech Data Analytics - FIAP
+## Objetivo do Projeto
+Desenvolver um modelo de Machine Learning para auxiliar um hospital a prever o nível de obesidade de um paciente com base em seus hábitos de vida e características físicas. O sistema foi deployado via Streamlit como uma aplicação preditiva hospitalar, contendo tanto um módulo de diagnóstico individual quanto um painel analítico com os principais insights sobre os dados.
 
-### Notebooks 📓
+## Ferramentas
+- Python
+- Jupyter Notebook
+- Pandas e NumPy
+- Matplotlib e Seaborn
+- Scikit-learn
+- Streamlit
 
-- [Aula 1 - Tratando os Dados](https://github.com/alura-tech/alura-tech-pos-data-science-credit-scoring-streamlit/blob/main/Notebooks/Aula_1.ipynb)
-- [Aula 2 - Criando a variável Target](https://github.com/alura-tech/alura-tech-pos-data-science-credit-scoring-streamlit/blob/main/Notebooks/Aula_2.ipynb)
-- [Aula 3 - Machine Learning: Construindo a Pipeline](https://github.com/alura-tech/alura-tech-pos-data-science-credit-scoring-streamlit/blob/main/Notebooks/Aula_3.ipynb)
-- [Aula 4 - Machine Learning: Escolhendo o Melhor Modelo](https://github.com/alura-tech/alura-tech-pos-data-science-credit-scoring-streamlit/blob/main/Notebooks/Aula_4.ipynb)
-- [Aula 5 - Criando a aplicação](https://github.com/alura-tech/alura-tech-pos-data-science-credit-scoring-streamlit/blob/main/app.py)
+## Metodologia
+### 1. Coleta dos Dados:
+Os dados foram obtidos a partir do dataset `Obesity.csv`, disponível no próprio repositório do GitHub, contendo características físicas, hábitos alimentares e estilo de vida de pacientes. O dicionário dos dados está contido no arquivo 'dicionario_obesity_fiap_tc4.pdf'
 
-### Dados 🎲
+### 2. Análise Exploratória:
+Foram realizadas análises de distribuição da variável alvo, estatísticas descritivas das variáveis numéricas e geração de um gráfico de correlação entre as features. As variáveis categóricas foram codificadas via Label Encoding, com encoders individuais por coluna para permitir a inversão da transformação durante a predição. A variável alvo `Obesity` recebeu um encoder separado.
 
-Os dados foram obtidos no [Kaggle](https://www.kaggle.com/datasets/rikdifos/credit-card-approval-prediction). Temos as seguintes tabelas: 
+O Gradient Boosting foi selecionado como modelo final, atingindo 96,6% de assertividade.
 
-- [clientes_cadastrados.csv](https://github.com/alura-tech/alura-tech-pos-data-science-credit-scoring-streamlit/blob/main/dados/clientes_cadastrados.csv): contém informações pessoais dos clientes
-- [clientes_aprovados.csv](https://github.com/alura-tech/alura-tech-pos-data-science-credit-scoring-streamlit/blob/main/dados/clientes_aprovados.csv): é o arquivo que contém todos os registros de pagamento/padrão de cada cliente.
+### 3. Pipeline de Machine Learning:
+O modelo final foi organizado em um `Pipeline` composto por duas etapas:
+1. **StandardScaler** — normalização das features
+2. **GradientBoostingClassifier** — classificação em 7 classes de obesidade
 
-> Os dados estão disponíveis na pasta [dados](https://github.com/alura-tech/alura-tech-pos-data-science-credit-scoring-streamlit/tree/main/dados) deste repositório. 
+### 4. Deploy via Streamlit:
+A aplicação foi deployada no Streamlit com duas abas principais:
 
-### Aplicação 📲
-Você pode acessar a aplicação criada em aula [aqui](https://share.streamlit.io/alura-tech/alura-tech-pos-data-science-credit-scoring-streamlit/main/app.py). 
+- **Diagnóstico**: formulário lateral com os dados do paciente (características físicas, hábitos alimentares e estilo de vida), exibindo a classe prevista, confiança do modelo, IMC calculado e distribuição de probabilidade por classe.
+- **Painel Analítico**: dashboard com KPIs e 4 gráficos — distribuição por gênero, boxplot de peso por classe, consumo de vegetais por nível de obesidade e frequência de atividade física por classe.
 
-### Objetivo 🎯
-Construir um modelo de aprendizado de máquina para prever se um cliente é 'bom' ou 'mal' pagador, para saber se ele terá um cartão de crédito aprovado ou não. Após obter o melhor modelo, uma aplicação será criada no Streamlit! Bora criar uma aplicação?! 
-
- 
+## Link da Aplicação
+- **Streamlit**: https://techchallenge4-xeprkmuxye5didewydacxk.streamlit.app/
