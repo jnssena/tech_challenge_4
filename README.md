@@ -30,5 +30,6 @@ A aplicação foi deployada no Streamlit com duas abas principais:
 - **Diagnóstico**: formulário lateral com os dados do paciente (características físicas, hábitos alimentares e estilo de vida), exibindo a classe prevista, confiança do modelo, IMC calculado e distribuição de probabilidade por classe.
 - **Painel Analítico**: dashboard com KPIs e 4 gráficos — distribuição por gênero, boxplot de peso por classe, consumo de vegetais por nível de obesidade e frequência de atividade física por classe.
 
-## Link da Aplicação
+## Links
 - **Streamlit**: https://techchallenge4-xeprkmuxye5didewydacxk.streamlit.app/
+- **Apresentação do Projeto**: https://youtu.be/lPf8kOWVhRU

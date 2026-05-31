@@ -2,3 +2,4 @@ Tech Challenge - Fase 4
 
 link repositório GItHub: https://github.com/jnssena/tech_challenge_4
 link aplicação Streamlit: https://techchallenge4-xeprkmuxye5didewydacxk.streamlit.app/
+link apresentação do projeto: https://youtu.be/lPf8kOWVhRU
